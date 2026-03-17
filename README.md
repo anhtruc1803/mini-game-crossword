@@ -14,7 +14,7 @@ The website **does not** stream video and **does not** accept user answers. It d
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18+
+- Node.js 20+
 - npm
 - A Supabase project (or Supabase CLI for local dev)
 
@@ -40,6 +40,8 @@ Open [http://localhost:3000](http://localhost:3000).
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anon/public key |
 | `SUPABASE_SERVICE_ROLE_KEY` | No | Service role key (server-side admin ops) |
+| `UPSTASH_REDIS_REST_URL` | No | Upstash Redis REST URL for distributed rate limiting |
+| `UPSTASH_REDIS_REST_TOKEN` | No | Upstash Redis REST token |
 
 ## Project Structure
 
@@ -98,3 +100,4 @@ supabase/               → Migrations, seeds, config
 - [Decisions](docs/DECISIONS.md)
 - [UI States](docs/UI_STATES.md)
 - [DB Schema](docs/DB_SCHEMA.md)
+- [Ubuntu Deployment](docs/DEPLOY_UBUNTU.md)
