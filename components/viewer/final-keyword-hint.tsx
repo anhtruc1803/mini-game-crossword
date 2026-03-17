@@ -9,10 +9,6 @@ interface FinalKeywordHintProps {
   gameEnded: boolean;
 }
 
-/**
- * Displays the final keyword built from highlighted characters of revealed rows.
- * Each position shows a character if the corresponding row is revealed, or a blank cell.
- */
 export function FinalKeywordHint({
   hints,
   finalKeyword,
@@ -22,24 +18,31 @@ export function FinalKeywordHint({
 
   if (hints.length === 0 && !finalKeyword) return null;
 
-  const allRevealed = hints.every((h) => h !== null);
+  const allRevealed = hints.every((hint) => hint !== null);
 
   return (
-    <div className="space-y-3">
-      <h3 className="text-center text-sm font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
-        {t.viewer.keyword}
-      </h3>
+    <section className="glass-panel rounded-[28px] p-5 sm:p-6">
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.24em] text-white/42">
+            {t.viewer.keyword}
+          </p>
+          <h3 className="mt-2 text-2xl font-semibold text-white">{t.viewer.keyword}</h3>
+        </div>
+        <p className="text-sm text-white/56">
+          {gameEnded && allRevealed ? t.viewer.finalKeywordReady : t.viewer.boardSubtitle}
+        </p>
+      </div>
 
-      <div className="flex items-center justify-center gap-1 md:gap-1.5">
+      <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
         {hints.map((hint, i) => (
           <div
             key={i}
             className={cn(
-              "flex items-center justify-center rounded-lg border text-sm font-bold transition-all md:text-lg",
-              "h-9 w-9 md:h-12 md:w-12",
+              "glass-panel-soft flex h-12 w-12 items-center justify-center rounded-2xl text-lg font-bold uppercase sm:h-14 sm:w-14 sm:text-xl",
               hint !== null
-                ? "border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--accent)]"
-                : "border-[var(--border)] bg-[var(--muted)]/30 text-[var(--muted-foreground)]"
+                ? "border-[var(--accent)]/45 bg-[var(--accent)]/18 text-[var(--accent)] shadow-[0_0_24px_rgba(245,158,11,0.18)]"
+                : "text-white/36"
             )}
           >
             {hint ?? "?"}
@@ -48,10 +51,15 @@ export function FinalKeywordHint({
       </div>
 
       {gameEnded && allRevealed && finalKeyword && (
-        <p className="text-center text-lg font-bold text-[var(--accent)]">
-          {finalKeyword}
-        </p>
+        <div className="mt-5 rounded-[24px] border border-[var(--primary)]/22 bg-[var(--primary)]/10 px-5 py-4 text-center shadow-[0_20px_40px_rgba(6,12,24,0.24)]">
+          <p className="text-xs uppercase tracking-[0.28em] text-white/54">
+            {t.viewer.finalKeywordReady}
+          </p>
+          <p className="mt-2 text-2xl font-black uppercase tracking-[0.3em] text-[var(--primary)]">
+            {finalKeyword}
+          </p>
+        </div>
       )}
-    </div>
+    </section>
   );
 }

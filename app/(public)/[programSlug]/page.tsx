@@ -1,27 +1,24 @@
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getViewerSnapshot } from "@/features/viewer/queries";
 import { ViewerRealtimeWrapper } from "@/components/viewer/viewer-realtime-wrapper";
 import { ViewerFooter } from "@/components/shared/viewer-footer";
+import { LanguageSwitcher } from "@/components/shared/language-switcher";
+import { ResilientImage } from "@/components/shared/resilient-image";
+import { vi } from "@/lib/i18n/locales/vi";
 
 interface ViewerPageProps {
   params: Promise<{ programSlug: string }>;
 }
 
-/**
- * Viewer page — Server Component.
- * Loads the initial snapshot via SSR, then hands off to the client
- * ViewerRealtimeWrapper for live polling updates.
- */
 export default async function ViewerPage({ params }: ViewerPageProps) {
   const { programSlug } = await params;
   const snapshot = await getViewerSnapshot(programSlug);
+  const t = vi;
 
   if (!snapshot) notFound();
 
   const { program, theme } = snapshot;
 
-  // Theme-based CSS variables applied at the server-rendered shell
   const themeStyle: React.CSSProperties = theme
     ? ({
         "--primary": theme.primaryColor,
@@ -31,74 +28,100 @@ export default async function ViewerPage({ params }: ViewerPageProps) {
     : {};
 
   return (
-    <main className="relative min-h-screen" style={themeStyle}>
-      {/* Background layer — static, server-rendered */}
+    <main className="relative min-h-screen overflow-hidden" style={themeStyle}>
       {theme?.desktopBgUrl && (
         <div
-          className="fixed inset-0 hidden bg-cover bg-center bg-no-repeat md:block"
+          className="fixed inset-0 hidden bg-cover bg-center bg-no-repeat opacity-35 md:block"
           style={{ backgroundImage: `url(${theme.desktopBgUrl})` }}
         />
       )}
       {theme?.mobileBgUrl && (
         <div
-          className="fixed inset-0 block bg-cover bg-center bg-no-repeat md:hidden"
+          className="fixed inset-0 bg-cover bg-center bg-no-repeat opacity-30 md:hidden"
           style={{ backgroundImage: `url(${theme.mobileBgUrl})` }}
         />
       )}
-      {theme && (
-        <div
-          className="fixed inset-0 bg-black"
-          style={{ opacity: theme.overlayOpacity }}
-        />
-      )}
 
-      {/* Content */}
-      <div className="relative z-10 mx-auto max-w-6xl px-3 py-4 md:px-6 md:py-8">
-        {/* Header — static, server-rendered */}
-        <header className="mb-6 text-center md:mb-8">
-          {theme?.logoUrl && (
-            <Image
-              src={theme.logoUrl}
-              alt="Logo"
-              width={192}
-              height={64}
-              className="mx-auto mb-3 h-12 object-contain md:h-16"
-            />
-          )}
-          {theme?.bannerUrl && (
-            <Image
-              src={theme.bannerUrl}
-              alt="Banner"
-              width={1200}
-              height={400}
-              className="mx-auto mb-4 max-h-32 rounded-xl object-contain md:max-h-48"
-            />
-          )}
-          {program.imageUrl && (
-            <div className="mx-auto mb-4 max-w-4xl overflow-hidden rounded-2xl border border-white/10 bg-black/10 shadow-2xl">
-              <div className="relative aspect-[21/9] w-full">
-                <Image
+      <div className="fixed inset-0 bg-[linear-gradient(180deg,rgba(7,17,31,0.68),rgba(7,17,31,0.88))]" />
+      <div className="pointer-events-none fixed inset-0 broadcast-grid opacity-[0.08]" />
+      <div className="pointer-events-none fixed -left-32 top-12 h-80 w-80 rounded-full bg-[var(--primary)]/20 blur-3xl" />
+      <div className="pointer-events-none fixed right-0 top-0 h-96 w-96 rounded-full bg-[var(--secondary)]/20 blur-3xl" />
+
+      <div className="relative z-10 mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+        <header className="glass-panel relative mb-8 overflow-hidden rounded-[32px] p-5 sm:p-6 lg:p-8">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.12),transparent_30%),linear-gradient(135deg,rgba(255,255,255,0.06),transparent_55%)]" />
+
+          <div className="relative flex justify-end">
+            <LanguageSwitcher />
+          </div>
+
+          <div className="relative grid items-center gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+            <div className="space-y-5">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="glass-pill inline-flex rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-white/80">
+                  {t.common.appName}
+                </span>
+                {theme?.logoUrl && (
+                  <div className="glass-pill h-12 w-28 overflow-hidden rounded-2xl p-2">
+                    <ResilientImage
+                      src={theme.logoUrl}
+                      alt="Logo chương trình"
+                      fallbackLabel={program.title}
+                      loading="eager"
+                      imgClassName="object-contain"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <h1 className="max-w-3xl text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
+                  {program.title}
+                </h1>
+                {program.description && (
+                  <p className="max-w-2xl text-base leading-7 text-white/72 sm:text-lg">
+                    {program.description}
+                  </p>
+                )}
+              </div>
+
+              {theme?.bannerUrl && (
+                <div className="glass-panel-soft max-w-3xl overflow-hidden rounded-3xl p-2">
+                  <div className="h-24 overflow-hidden rounded-[20px] sm:h-28">
+                    <ResilientImage
+                      src={theme.bannerUrl}
+                      alt={`${program.title} banner`}
+                      fallbackLabel={program.title}
+                      loading="eager"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="glass-panel-soft overflow-hidden rounded-[28px] p-3">
+              <div className="relative h-[260px] overflow-hidden rounded-[22px] sm:h-[320px] lg:h-[380px]">
+                <ResilientImage
                   src={program.imageUrl}
                   alt={program.title}
-                  fill
-                  className="object-cover"
-                  priority
+                  fallbackLabel={program.title}
+                  loading="eager"
                 />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-[linear-gradient(180deg,transparent,rgba(4,10,20,0.88))]" />
+                <div className="absolute bottom-0 left-0 right-0 p-5">
+                  <p className="text-sm uppercase tracking-[0.26em] text-white/55">
+                    {t.viewer.boardTitle}
+                  </p>
+                  <p className="mt-2 text-xl font-semibold text-white sm:text-2xl">
+                    {program.title}
+                  </p>
+                </div>
               </div>
             </div>
-          )}
-          <h1 className="text-2xl font-bold md:text-4xl">{program.title}</h1>
-          {program.description && (
-            <p className="mt-1 text-sm text-[var(--muted-foreground)] md:text-base">
-              {program.description}
-            </p>
-          )}
+          </div>
         </header>
 
-        {/* Game content — client component with realtime */}
         <ViewerRealtimeWrapper initialSnapshot={snapshot} />
-
-        {/* Footer */}
         <ViewerFooter />
       </div>
     </main>

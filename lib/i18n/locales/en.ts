@@ -37,6 +37,13 @@ export const en: TranslationKeys = {
     footer: "Mini Crossword Game",
     aboutToStart: "Starting Soon",
     happening: "Live Now",
+    boardTitle: "Live Crossword Board",
+    boardSubtitle: "Questions unlock in real time during the broadcast.",
+    announcementLabel: "Announcement",
+    updatesSubtitle: "Latest game actions and broadcast notes.",
+    noUpdatesYet: "No updates yet. The timeline will appear here once the game starts.",
+    activeQuestion: "Active question",
+    finalKeywordReady: "Final keyword revealed",
   },
 
   admin: {

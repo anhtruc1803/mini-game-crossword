@@ -1,21 +1,73 @@
 @import "tailwindcss";
 
 :root {
-  --primary: #6366f1;
-  --secondary: #8b5cf6;
+  --primary: #5eead4;
+  --secondary: #60a5fa;
   --accent: #f59e0b;
-  --background: #0f172a;
+  --background: #07111f;
   --foreground: #f8fafc;
-  --card: #1e293b;
+  --card: #101b2f;
   --card-foreground: #f1f5f9;
-  --muted: #334155;
-  --muted-foreground: #94a3b8;
-  --border: #334155;
-  --ring: #6366f1;
+  --muted: #17263e;
+  --muted-foreground: #9cb1cf;
+  --border: rgba(203, 213, 225, 0.14);
+  --ring: #5eead4;
+}
+
+html {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
-  font-family: system-ui, -apple-system, sans-serif;
-  background: var(--background);
+  font-family: "Be Vietnam Pro", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(94, 234, 212, 0.16), transparent 28%),
+    radial-gradient(circle at 85% 12%, rgba(96, 165, 250, 0.18), transparent 24%),
+    radial-gradient(circle at 50% 100%, rgba(14, 165, 233, 0.12), transparent 30%),
+    linear-gradient(180deg, #07111f 0%, #09172a 42%, #050c17 100%);
   color: var(--foreground);
+  min-height: 100vh;
+}
+
+::selection {
+  background: rgba(94, 234, 212, 0.28);
+  color: #ffffff;
+}
+
+.glass-panel {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.76), rgba(8, 15, 29, 0.52));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 24px 60px rgba(2, 6, 23, 0.38);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
+.glass-panel-soft {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 18, 35, 0.46);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.glass-pill {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.broadcast-grid {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.09) 1px, transparent 1px);
+  background-size: 26px 26px;
 }

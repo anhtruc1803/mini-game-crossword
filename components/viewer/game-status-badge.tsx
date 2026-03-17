@@ -5,10 +5,14 @@ import { GAME_STATUS } from "@/features/games/constants";
 import { useTranslation } from "@/lib/i18n";
 
 const BADGE_STYLES: Record<string, string> = {
-  [GAME_STATUS.DRAFT]: "bg-gray-500/20 text-gray-300 border-gray-500/30",
-  [GAME_STATUS.LIVE]: "bg-green-500/20 text-green-400 border-green-500/30 animate-pulse",
-  [GAME_STATUS.PAUSED]: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  [GAME_STATUS.ENDED]: "bg-red-500/20 text-red-400 border-red-500/30",
+  [GAME_STATUS.DRAFT]:
+    "border-white/12 bg-white/8 text-white/74",
+  [GAME_STATUS.LIVE]:
+    "border-emerald-400/24 bg-emerald-400/14 text-emerald-200 shadow-[0_0_28px_rgba(16,185,129,0.18)]",
+  [GAME_STATUS.PAUSED]:
+    "border-amber-400/24 bg-amber-400/14 text-amber-100 shadow-[0_0_24px_rgba(245,158,11,0.15)]",
+  [GAME_STATUS.ENDED]:
+    "border-rose-400/24 bg-rose-400/14 text-rose-100 shadow-[0_0_24px_rgba(244,63,94,0.14)]",
 };
 
 interface GameStatusBadgeProps {
@@ -32,14 +36,23 @@ export function GameStatusBadge({ status, className }: GameStatusBadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold",
+        "glass-pill inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold",
         style,
         className
       )}
     >
-      {status === GAME_STATUS.LIVE && (
-        <span className="mr-1.5 h-2 w-2 rounded-full bg-green-400" />
-      )}
+      <span
+        className={cn(
+          "mr-2 h-2.5 w-2.5 rounded-full",
+          status === GAME_STATUS.LIVE
+            ? "bg-emerald-300 shadow-[0_0_16px_rgba(110,231,183,0.75)]"
+            : status === GAME_STATUS.PAUSED
+              ? "bg-amber-300"
+              : status === GAME_STATUS.ENDED
+                ? "bg-rose-300"
+                : "bg-white/55"
+        )}
+      />
       {label}
     </span>
   );

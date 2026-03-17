@@ -7,7 +7,7 @@ export function ViewerFooter() {
   const { t } = useTranslation();
 
   return (
-    <footer className="mt-12 flex items-center justify-center gap-3 text-xs text-[var(--muted-foreground)]/50">
+    <footer className="mt-10 flex items-center justify-center gap-3 pb-4 text-xs text-white/42">
       <span>{t.viewer.footer}</span>
       <LanguageSwitcher />
     </footer>

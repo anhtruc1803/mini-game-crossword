@@ -23,47 +23,58 @@ export function CrosswordRowView({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-lg px-2 py-1.5 transition-all md:gap-3 md:px-3 md:py-2",
-        isActive && "bg-[var(--primary)]/5 ring-1 ring-[var(--primary)]/30"
+        "rounded-[24px] px-2 py-2 transition-all duration-300 sm:px-3",
+        isActive && "bg-white/6 shadow-[0_0_0_1px_rgba(94,234,212,0.18),0_16px_40px_rgba(8,15,29,0.28)]"
       )}
     >
-      <span
-        className={cn(
-          "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold md:h-8 md:w-8 md:text-sm",
-          isActive
-            ? "bg-[var(--primary)] text-white"
-            : isRevealed
-              ? "bg-green-500/20 text-green-400"
-              : "bg-[var(--muted)] text-[var(--muted-foreground)]"
-        )}
-      >
-        {rowIndex + 1}
-      </span>
+      <div className="flex items-center gap-3">
+        <span
+          className={cn(
+            "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-bold sm:h-12 sm:w-12",
+            isActive
+              ? "bg-[var(--primary)] text-slate-950 shadow-[0_0_30px_rgba(94,234,212,0.36)]"
+              : isRevealed
+                ? "bg-emerald-400/18 text-emerald-300"
+                : "bg-white/6 text-white/72"
+          )}
+        >
+          {rowIndex + 1}
+        </span>
 
-      <div className="flex gap-0.5 md:gap-1" style={{ paddingLeft: `${offset * 2}px` }}>
-        {Array.from({ length: row.answerLength }).map((_, i) => {
-          const char = row.answerText?.[i] ?? "";
-          const isHighlighted = row.highlightedIndexes.includes(i);
-
-          return (
+        <div className="flex flex-1 justify-center gap-1.5 sm:gap-2">
+          {Array.from({ length: offset }).map((_, index) => (
             <div
-              key={i}
-              className={cn(
-                "flex h-7 w-7 items-center justify-center rounded border text-xs font-bold transition-all md:h-9 md:w-9 md:text-sm",
-                isHidden && "border-[var(--border)]/40 bg-[var(--muted)]/30",
-                isClueVisible && "border-[var(--border)] bg-[var(--card)]",
-                isRevealed &&
-                  !isHighlighted &&
-                  "border-[var(--border)] bg-[var(--card)] text-[var(--foreground)]",
-                isRevealed &&
-                  isHighlighted &&
-                  "border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--accent)]"
-              )}
-            >
-              {isRevealed ? char : ""}
-            </div>
-          );
-        })}
+              key={`spacer-${index}`}
+              aria-hidden="true"
+              className="h-11 w-11 rounded-2xl opacity-0 sm:h-12 sm:w-12"
+            />
+          ))}
+
+          {Array.from({ length: row.answerLength }).map((_, i) => {
+            const char = row.answerText?.[i] ?? "";
+            const isHighlighted = row.highlightedIndexes.includes(i);
+
+            return (
+              <div
+                key={i}
+                className={cn(
+                  "flex h-11 w-11 items-center justify-center rounded-2xl border text-sm font-bold uppercase transition-all duration-300 sm:h-12 sm:w-12 sm:text-base",
+                  isHidden && "border-white/8 bg-white/5 text-transparent",
+                  isClueVisible && "border-white/14 bg-white/7 text-white/15",
+                  isRevealed &&
+                    !isHighlighted &&
+                    "border-white/14 bg-white/12 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
+                  isRevealed &&
+                    isHighlighted &&
+                    "border-[var(--accent)]/45 bg-[var(--accent)]/18 text-[var(--accent)] shadow-[0_0_20px_rgba(245,158,11,0.2)]",
+                  isActive && !isRevealed && "border-[var(--primary)]/18 bg-[var(--primary)]/8"
+                )}
+              >
+                {isRevealed ? char : ""}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

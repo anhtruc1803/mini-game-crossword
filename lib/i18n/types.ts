@@ -42,6 +42,13 @@ export type TranslationKeys = {
     footer: string;
     aboutToStart: string;
     happening: string;
+    boardTitle: string;
+    boardSubtitle: string;
+    announcementLabel: string;
+    updatesSubtitle: string;
+    noUpdatesYet: string;
+    activeQuestion: string;
+    finalKeywordReady: string;
   };
 
   // Admin common
