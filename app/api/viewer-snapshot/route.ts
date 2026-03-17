@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getViewerSnapshot } from "@/features/viewer/queries";
 import { getClientIp } from "@/lib/security/request";
 import { assertRateLimit } from "@/lib/security/rate-limit";
+import { AppError } from "@/lib/security/errors";
 
 const viewerSnapshotSchema = z.object({
   slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/),
@@ -38,7 +39,14 @@ export async function GET(request: NextRequest) {
         },
       }
     );
-  } catch {
+  } catch (error) {
+    if (error instanceof AppError) {
+      return NextResponse.json(
+        { error: error.expose ? error.message : "Internal error" },
+        { status: error.status }
+      );
+    }
+
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

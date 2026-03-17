@@ -1,12 +1,17 @@
 /**
- * Assets file upload logic for Supabase Storage.
+ * Assets file upload logic — local filesystem storage.
  */
 
-import { createSupabaseServiceRole } from "@/lib/supabase/service-role";
+import fs from "fs/promises";
+import path from "path";
 import { AppError } from "@/lib/security/errors";
 
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+const SAFE_BUCKET_PATTERN = /^[a-z0-9][a-z0-9-_]*$/i;
+
+/** Root directory for uploaded files (relative to project root). */
+const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads");
 
 function validateImage(file: File) {
   if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
@@ -18,29 +23,50 @@ function validateImage(file: File) {
   }
 }
 
-export async function uploadImage(file: File, bucket: string, path: string) {
-  validateImage(file);
-
-  const supabase = createSupabaseServiceRole();
-  const arrayBuffer = await file.arrayBuffer();
-  const { error } = await supabase.storage.from(bucket).upload(path, arrayBuffer, {
-    contentType: file.type,
-    cacheControl: "3600",
-    upsert: false,
-  });
-
-  if (error) {
-    throw new AppError(`Failed to upload image: ${error.message}`, "upload_failed", 500, false);
-  }
-
-  return path;
+async function ensureDir(dir: string) {
+  await fs.mkdir(dir, { recursive: true });
 }
 
-export async function deleteImage(bucket: string, path: string) {
-  const supabase = createSupabaseServiceRole();
-  const { error } = await supabase.storage.from(bucket).remove([path]);
+function resolveUploadPath(bucket: string, filePath: string) {
+  if (!SAFE_BUCKET_PATTERN.test(bucket)) {
+    throw new AppError("Invalid upload bucket.", "invalid_bucket", 400);
+  }
 
-  if (error) {
-    throw new AppError(`Failed to delete image: ${error.message}`, "delete_failed", 500, false);
+  const bucketRoot = path.resolve(UPLOADS_DIR, bucket);
+  const targetPath = path.resolve(bucketRoot, filePath);
+
+  if (!targetPath.startsWith(`${bucketRoot}${path.sep}`) && targetPath !== bucketRoot) {
+    throw new AppError("Invalid upload path.", "invalid_upload_path", 400);
+  }
+
+  return {
+    bucketRoot,
+    targetPath,
+  };
+}
+
+export async function uploadImage(file: File, bucket: string, filePath: string): Promise<string> {
+  validateImage(file);
+
+  const { bucketRoot, targetPath } = resolveUploadPath(bucket, filePath);
+  const fullDir = path.join(bucketRoot, path.dirname(filePath));
+  await ensureDir(fullDir);
+
+  const arrayBuffer = await file.arrayBuffer();
+  await fs.writeFile(targetPath, Buffer.from(arrayBuffer));
+
+  // Return the public URL path
+  return `/uploads/${bucket}/${filePath}`;
+}
+
+export async function deleteImage(bucket: string, filePath: string): Promise<void> {
+  const { targetPath } = resolveUploadPath(bucket, filePath);
+  try {
+    await fs.unlink(targetPath);
+  } catch (error) {
+    // Ignore if file doesn't exist
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw new AppError(`Failed to delete image: ${(error as Error).message}`, "delete_failed", 500, false);
+    }
   }
 }

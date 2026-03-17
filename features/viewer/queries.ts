@@ -1,100 +1,144 @@
 /**
  * Viewer queries assemble the full public game snapshot for display.
- * Public viewer data must always be sanitized before reaching the client.
+ * Public snapshots must never expose unrevealed answers or the final keyword early.
  */
 
-import { z } from "zod";
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { prisma } from "@/lib/db/prisma";
+import { GAME_STATUS, ROW_STATUS } from "@/features/games/constants";
+import { mapPrismaToProgram } from "@/features/programs/mapper";
+import { mapPrismaToTheme } from "@/features/themes/mapper";
+import {
+  mapPrismaToGame,
+  mapPrismaToCrosswordRow,
+  mapPrismaToGameEvent,
+} from "@/features/games/mapper";
 import { buildFinalKeywordHint } from "@/features/games/selectors";
 import type { PublicViewerSnapshot } from "./view-model";
 
-const publicViewerSnapshotSchema = z.object({
-  program: z.object({
-    id: z.string(),
-    slug: z.string(),
-    title: z.string(),
-    description: z.string().nullable(),
-    status: z.enum(["draft", "live", "ended"]),
-    startAt: z.string().nullable(),
-    endAt: z.string().nullable(),
-    themeId: z.string().nullable(),
-    createdAt: z.string(),
-    updatedAt: z.string(),
-  }),
-  theme: z
-    .object({
-      id: z.string(),
-      name: z.string(),
-      logoUrl: z.string().nullable(),
-      bannerUrl: z.string().nullable(),
-      desktopBgUrl: z.string().nullable(),
-      mobileBgUrl: z.string().nullable(),
-      primaryColor: z.string(),
-      secondaryColor: z.string(),
-      accentColor: z.string(),
-      overlayOpacity: z.number(),
-      fontHeading: z.string().nullable(),
-      fontBody: z.string().nullable(),
-      customCssJson: z.record(z.string(), z.string()).nullable(),
-      createdAt: z.string(),
-      updatedAt: z.string(),
-    })
-    .nullable(),
-  game: z
-    .object({
-      id: z.string(),
-      title: z.string(),
-      subtitle: z.string().nullable(),
-      gameStatus: z.enum(["draft", "live", "paused", "ended"]),
-      announcementText: z.string().nullable(),
-    })
-    .nullable(),
-  rows: z.array(
-    z.object({
-      id: z.string(),
-      rowOrder: z.number().int().min(0),
-      clueText: z.string(),
-      answerText: z.string(),
-      answerLength: z.number().int().min(0),
-      highlightedIndexes: z.array(z.number().int().min(0)),
-      rowStatus: z.enum(["hidden", "clue_visible", "answer_revealed"]),
-    })
-  ),
-  activeRowIndex: z.number().int().min(0).nullable(),
-  events: z.array(
-    z.object({
-      id: z.string(),
-      gameId: z.string(),
-      eventType: z.string(),
-      message: z.string(),
-      payloadJson: z.record(z.string(), z.unknown()).nullable(),
-      createdAt: z.string(),
-      createdBy: z.string().nullable(),
-    })
-  ),
-  finalKeyword: z.string().nullable(),
-});
+const VIEWER_SNAPSHOT_CACHE_TTL_MS = 2000;
+const globalForViewerSnapshotCache = globalThis as typeof globalThis & {
+  viewerSnapshotCache?: Map<
+    string,
+    { expiresAt: number; snapshot: PublicViewerSnapshot | null }
+  >;
+};
+
+const viewerSnapshotCache =
+  globalForViewerSnapshotCache.viewerSnapshotCache ??
+  new Map<string, { expiresAt: number; snapshot: PublicViewerSnapshot | null }>();
+
+if (!globalForViewerSnapshotCache.viewerSnapshotCache) {
+  globalForViewerSnapshotCache.viewerSnapshotCache = viewerSnapshotCache;
+}
 
 export async function getViewerSnapshot(
   programSlug: string
 ): Promise<PublicViewerSnapshot | null> {
-  const supabase = await createSupabaseServer();
-  const { data, error } = await supabase.rpc("get_public_viewer_snapshot", {
-    p_program_slug: programSlug,
-  });
-
-  if (error) {
-    throw new Error(`Failed to get public viewer snapshot: ${error.message}`);
+  const cachedSnapshot = viewerSnapshotCache.get(programSlug);
+  if (cachedSnapshot && cachedSnapshot.expiresAt > Date.now()) {
+    return cachedSnapshot.snapshot;
   }
 
-  if (!data) {
+  const prismaProgram = await prisma.program.findUnique({
+    where: { slug: programSlug },
+  });
+
+  if (!prismaProgram) {
+    viewerSnapshotCache.set(programSlug, {
+      expiresAt: Date.now() + VIEWER_SNAPSHOT_CACHE_TTL_MS,
+      snapshot: null,
+    });
     return null;
   }
 
-  const parsed = publicViewerSnapshotSchema.parse(data);
+  const program = mapPrismaToProgram(prismaProgram);
 
-  return {
-    ...parsed,
-    finalKeywordHint: buildFinalKeywordHint(parsed.rows),
+  let theme = null;
+  if (prismaProgram.themeId) {
+    const prismaTheme = await prisma.theme.findUnique({
+      where: { id: prismaProgram.themeId },
+    });
+    theme = prismaTheme ? mapPrismaToTheme(prismaTheme) : null;
+  }
+
+  const prismaGame = await prisma.game.findFirst({
+    where: { programId: prismaProgram.id },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (!prismaGame) {
+    const emptySnapshot: PublicViewerSnapshot = {
+      program,
+      theme,
+      game: null,
+      rows: [],
+      activeRowIndex: null,
+      events: [],
+      finalKeywordHint: [],
+      finalKeyword: null,
+    };
+
+    viewerSnapshotCache.set(programSlug, {
+      expiresAt: Date.now() + VIEWER_SNAPSHOT_CACHE_TTL_MS,
+      snapshot: emptySnapshot,
+    });
+
+    return emptySnapshot;
+  }
+
+  const game = mapPrismaToGame(prismaGame);
+
+  const prismaRows = await prisma.crosswordRow.findMany({
+    where: { gameId: prismaGame.id },
+    orderBy: { rowOrder: "asc" },
+  });
+  const rows = prismaRows.map(mapPrismaToCrosswordRow);
+
+  const prismaEvents = await prisma.gameEvent.findMany({
+    where: { gameId: prismaGame.id },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+  });
+  const events = prismaEvents.map(mapPrismaToGameEvent);
+
+  const snapshot: PublicViewerSnapshot = {
+    program,
+    theme,
+    game: {
+      id: game.id,
+      title: game.title,
+      subtitle: game.subtitle,
+      gameStatus: game.gameStatus,
+      announcementText: game.announcementText,
+    },
+    rows: rows.map((row) => ({
+      id: row.id,
+      rowOrder: row.rowOrder,
+      clueText: row.clueText,
+      answerText:
+        row.rowStatus === ROW_STATUS.ANSWER_REVEALED ? row.answerText : null,
+      answerLength: row.answerLength,
+      highlightedIndexes: row.highlightedIndexes,
+      rowStatus: row.rowStatus,
+    })),
+    activeRowIndex: game.currentRowIndex,
+    events,
+    finalKeywordHint: buildFinalKeywordHint(
+      rows.map((row) => ({
+        answerText:
+          row.rowStatus === ROW_STATUS.ANSWER_REVEALED ? row.answerText : "",
+        highlightedIndexes: row.highlightedIndexes,
+        rowStatus: row.rowStatus,
+      }))
+    ),
+    finalKeyword:
+      game.gameStatus === GAME_STATUS.ENDED ? game.finalKeyword : null,
   };
+
+  viewerSnapshotCache.set(programSlug, {
+    expiresAt: Date.now() + VIEWER_SNAPSHOT_CACHE_TTL_MS,
+    snapshot,
+  });
+
+  return snapshot;
 }

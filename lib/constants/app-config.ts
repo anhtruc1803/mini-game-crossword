@@ -5,6 +5,6 @@ export const APP_CONFIG = {
   description: "Mini game o chu realtime cho livestream",
   /** Max rows per crossword game */
   maxRows: 20,
-  /** Fallback polling interval in ms for the public viewer snapshot */
-  pollingIntervalMs: 30000,
+  /** Polling interval in ms for the public viewer snapshot (10 seconds) */
+  pollingIntervalMs: 10000,
 } as const;

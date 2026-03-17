@@ -1,25 +1,24 @@
 /**
- * Programs — data mapping between DB rows and domain types.
- *
- * Example:
- *   DB row:  { id, slug, title, description, status, start_at, end_at, theme_id, created_at, updated_at }
- *   Domain:  { id, slug, title, description, status, startAt,  endAt,  themeId,  createdAt,  updatedAt  }
+ * Programs — data mapping between Prisma models and domain types.
  */
 
+import type { Program as PrismaProgram } from "@prisma/client";
 import type { Program } from "./types";
 
-/** Map a Supabase DB row to domain Program. */
-export function mapDbRowToProgram(row: Record<string, unknown>): Program {
+export function mapPrismaToProgram(row: PrismaProgram): Program {
   return {
-    id: row.id as string,
-    slug: row.slug as string,
-    title: row.title as string,
-    description: (row.description as string) ?? null,
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    description: row.description,
     status: row.status as Program["status"],
-    startAt: (row.start_at as string) ?? null,
-    endAt: (row.end_at as string) ?? null,
-    themeId: (row.theme_id as string) ?? null,
-    createdAt: row.created_at as string,
-    updatedAt: row.updated_at as string,
+    startAt: row.startAt?.toISOString() ?? null,
+    endAt: row.endAt?.toISOString() ?? null,
+    themeId: row.themeId,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
   };
 }
+
+// Legacy alias for backward compatibility
+export const mapDbRowToProgram = mapPrismaToProgram as (row: unknown) => Program;

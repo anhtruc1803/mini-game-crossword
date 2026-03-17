@@ -1,22 +1,16 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { prisma } from "@/lib/db/prisma";
 
 export async function GET() {
   const checks = {
-    env: Boolean(
-      process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    ),
+    env: Boolean(process.env.DATABASE_URL),
     database: false,
   };
 
   try {
-    const supabase = await createSupabaseServer();
-    const { error } = await supabase
-      .from("programs")
-      .select("id", { head: true, count: "exact" })
-      .limit(1);
-
-    checks.database = !error;
+    // Simple connectivity check
+    await prisma.program.count();
+    checks.database = true;
   } catch {
     checks.database = false;
   }

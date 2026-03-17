@@ -1,6 +1,6 @@
 /**
  * Assets — storage path helpers.
- * Centralized path generation for Supabase Storage.
+ * Centralized path generation for local filesystem storage.
  */
 
 export const STORAGE_BUCKETS = {

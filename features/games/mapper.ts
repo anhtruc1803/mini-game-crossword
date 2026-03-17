@@ -1,51 +1,74 @@
 /**
- * Games — data mapping between DB rows and domain types.
+ * Games — data mapping between Prisma models and domain types.
  *
- * DB uses snake_case, domain uses camelCase.
+ * With Prisma's @map directives, most fields are already camelCase.
+ * The mapper handles JSON string fields that need parsing.
  */
 
+import type { Game as PrismaGame, CrosswordRow as PrismaRow, GameEvent as PrismaEvent } from "@prisma/client";
 import type { Game, CrosswordRow, GameEvent } from "./types";
 
-export function mapDbRowToGame(row: Record<string, unknown>): Game {
+export function mapPrismaToGame(row: PrismaGame): Game {
   return {
-    id: row.id as string,
-    programId: row.program_id as string,
-    title: row.title as string,
-    subtitle: (row.subtitle as string) ?? null,
-    finalKeyword: (row.final_keyword as string) ?? null,
-    totalRows: row.total_rows as number,
-    currentRowIndex: (row.current_row_index as number) ?? null,
-    gameStatus: row.game_status as Game["gameStatus"],
-    announcementText: (row.announcement_text as string) ?? null,
-    createdAt: row.created_at as string,
-    updatedAt: row.updated_at as string,
+    id: row.id,
+    programId: row.programId,
+    title: row.title,
+    subtitle: row.subtitle,
+    finalKeyword: row.finalKeyword,
+    totalRows: row.totalRows,
+    currentRowIndex: row.currentRowIndex,
+    gameStatus: row.gameStatus as Game["gameStatus"],
+    announcementText: row.announcementText,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
   };
 }
 
-export function mapDbRowToCrosswordRow(row: Record<string, unknown>): CrosswordRow {
+export function mapPrismaToCrosswordRow(row: PrismaRow): CrosswordRow {
+  let indexes: number[] = [];
+  try {
+    indexes = JSON.parse(row.highlightedIndexesJson) as number[];
+  } catch {
+    indexes = [];
+  }
+
   return {
-    id: row.id as string,
-    gameId: row.game_id as string,
-    rowOrder: row.row_order as number,
-    clueText: row.clue_text as string,
-    answerText: row.answer_text as string,
-    answerLength: row.answer_length as number,
-    highlightedIndexes: (row.highlighted_indexes_json as number[]) ?? [],
-    rowStatus: row.row_status as CrosswordRow["rowStatus"],
-    noteText: (row.note_text as string) ?? null,
-    createdAt: row.created_at as string,
-    updatedAt: row.updated_at as string,
+    id: row.id,
+    gameId: row.gameId,
+    rowOrder: row.rowOrder,
+    clueText: row.clueText,
+    answerText: row.answerText,
+    answerLength: row.answerLength,
+    highlightedIndexes: indexes,
+    rowStatus: row.rowStatus as CrosswordRow["rowStatus"],
+    noteText: row.noteText,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
   };
 }
 
-export function mapDbRowToGameEvent(row: Record<string, unknown>): GameEvent {
+export function mapPrismaToGameEvent(row: PrismaEvent): GameEvent {
+  let payload: Record<string, unknown> | null = null;
+  try {
+    if (row.payloadJson) {
+      payload = JSON.parse(row.payloadJson) as Record<string, unknown>;
+    }
+  } catch {
+    payload = null;
+  }
+
   return {
-    id: row.id as string,
-    gameId: row.game_id as string,
-    eventType: row.event_type as string,
-    message: row.message as string,
-    payloadJson: (row.payload_json as Record<string, unknown>) ?? null,
-    createdAt: row.created_at as string,
-    createdBy: (row.created_by as string) ?? null,
+    id: row.id,
+    gameId: row.gameId,
+    eventType: row.eventType,
+    message: row.message,
+    payloadJson: payload,
+    createdAt: row.createdAt.toISOString(),
+    createdBy: row.createdBy,
   };
 }
+
+// Keep legacy aliases for backward compatibility with tests
+export const mapDbRowToGame = mapPrismaToGame as (row: unknown) => Game;
+export const mapDbRowToCrosswordRow = mapPrismaToCrosswordRow as (row: unknown) => CrosswordRow;
+export const mapDbRowToGameEvent = mapPrismaToGameEvent as (row: unknown) => GameEvent;

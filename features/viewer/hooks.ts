@@ -1,18 +1,14 @@
 "use client";
 
 import { startTransition, useCallback, useEffect, useRef, useState } from "react";
-import type { RealtimeChannel } from "@supabase/supabase-js";
 import { APP_CONFIG } from "@/lib/constants/app-config";
 import type { PublicViewerSnapshot } from "./view-model";
-import { subscribeToGame, unsubscribeFromGame } from "./realtime";
 
 export function useGameRealtime(initialSnapshot: PublicViewerSnapshot) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
-  const channelRef = useRef<RealtimeChannel | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const refreshInFlightRef = useRef(false);
 
-  const gameId = snapshot.game?.id;
   const programSlug = snapshot.program.slug;
 
   const refreshSnapshot = useCallback(async () => {
@@ -38,21 +34,7 @@ export function useGameRealtime(initialSnapshot: PublicViewerSnapshot) {
     }
   }, [programSlug]);
 
-  useEffect(() => {
-    if (!gameId) return;
-
-    channelRef.current = subscribeToGame(gameId, () => {
-      void refreshSnapshot();
-    });
-
-    return () => {
-      if (channelRef.current) {
-        unsubscribeFromGame(channelRef.current);
-        channelRef.current = null;
-      }
-    };
-  }, [gameId, refreshSnapshot]);
-
+  // Polling only — no Supabase Realtime
   useEffect(() => {
     pollingRef.current = setInterval(() => {
       if (typeof document !== "undefined" && document.visibilityState === "hidden") {

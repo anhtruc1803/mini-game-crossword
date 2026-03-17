@@ -11,7 +11,7 @@ interface ViewerPageProps {
 /**
  * Viewer page — Server Component.
  * Loads the initial snapshot via SSR, then hands off to the client
- * ViewerRealtimeWrapper for live Supabase Realtime updates.
+ * ViewerRealtimeWrapper for live polling updates.
  */
 export default async function ViewerPage({ params }: ViewerPageProps) {
   const { programSlug } = await params;

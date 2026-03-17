@@ -3,67 +3,58 @@
  * All admin routes and mutations must verify permissions through this module.
  */
 
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { prisma } from "@/lib/db/prisma";
+import { getSession } from "@/lib/auth/session";
 import { AppError } from "@/lib/security/errors";
+import { ROUTES } from "@/lib/constants/routes";
+import { redirect } from "next/navigation";
 
 export async function isAdmin() {
-  const supabase = await createSupabaseServer();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
+  const session = await getSession();
+  if (!session) return false;
 
-  if (authError || !user) {
-    return false;
-  }
+  const adminUser = await prisma.adminUser.findUnique({
+    where: { id: session.userId },
+    select: { id: true, role: true, isActive: true },
+  });
 
-  const { data, error } = await supabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (error) {
-    throw new AppError(
-      "Failed to verify admin permissions",
-      "admin_check_failed",
-      500,
-      false
-    );
-  }
-
-  return Boolean(data);
+  if (!adminUser || !adminUser.isActive) return false;
+  return adminUser.role === "admin";
 }
 
 export async function requireAdmin() {
-  const supabase = await createSupabaseServer();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
+  const session = await getSession();
+  if (!session) {
     throw new AppError("Authentication required", "unauthorized", 401);
   }
 
-  const { data, error } = await supabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const adminUser = await prisma.adminUser.findUnique({
+    where: { id: session.userId },
+    select: { id: true, email: true, role: true, isActive: true },
+  });
 
-  if (error) {
-    throw new AppError(
-      "Failed to verify admin permissions",
-      "admin_check_failed",
-      500,
-      false
-    );
+  if (!adminUser || !adminUser.isActive) {
+    throw new AppError("Authentication required", "unauthorized", 401);
   }
 
-  if (!data) {
+  if (adminUser.role !== "admin") {
     throw new AppError("Admin access required", "forbidden", 403);
   }
 
-  return user;
+  return { id: adminUser.id, email: adminUser.email };
+}
+
+export async function requireAdminPageAccess() {
+  try {
+    return await requireAdmin();
+  } catch (error) {
+    if (
+      error instanceof AppError &&
+      (error.status === 401 || error.status === 403)
+    ) {
+      redirect(ROUTES.admin.login);
+    }
+
+    throw error;
+  }
 }

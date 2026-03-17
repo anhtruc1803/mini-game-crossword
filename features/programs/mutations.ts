@@ -3,91 +3,64 @@
  * All mutations go through this file (single source of truth).
  */
 
-import { createSupabaseServer } from "@/lib/supabase/server";
-import { mapDbRowToProgram } from "./mapper";
+import { prisma } from "@/lib/db/prisma";
+import { mapPrismaToProgram } from "./mapper";
 import type { Program, ProgramStatus } from "./types";
 import type { CreateProgramInput, UpdateProgramInput } from "./schemas";
 
 export async function insertProgram(input: CreateProgramInput): Promise<Program> {
-  const supabase = await createSupabaseServer();
-  const { data, error } = await supabase
-    .from("programs")
-    .insert({
+  const row = await prisma.program.create({
+    data: {
       title: input.title,
       slug: input.slug,
       description: input.description ?? null,
-      start_at: input.startAt ?? null,
-      end_at: input.endAt ?? null,
-    })
-    .select()
-    .single();
-
-  if (error) throw new Error(`Failed to create program: ${error.message}`);
-  return mapDbRowToProgram(data);
+      startAt: input.startAt ? new Date(input.startAt) : null,
+      endAt: input.endAt ? new Date(input.endAt) : null,
+    },
+  });
+  return mapPrismaToProgram(row);
 }
 
 export async function updateProgramById(
   id: string,
   input: UpdateProgramInput
 ): Promise<Program> {
-  const supabase = await createSupabaseServer();
+  const data: Record<string, unknown> = {};
+  if (input.title !== undefined) data.title = input.title;
+  if (input.slug !== undefined) data.slug = input.slug;
+  if (input.description !== undefined) data.description = input.description;
+  if (input.startAt !== undefined) data.startAt = input.startAt ? new Date(input.startAt) : null;
+  if (input.endAt !== undefined) data.endAt = input.endAt ? new Date(input.endAt) : null;
 
-  const updateData: Record<string, unknown> = {};
-  if (input.title !== undefined) updateData.title = input.title;
-  if (input.slug !== undefined) updateData.slug = input.slug;
-  if (input.description !== undefined) updateData.description = input.description;
-  if (input.startAt !== undefined) updateData.start_at = input.startAt;
-  if (input.endAt !== undefined) updateData.end_at = input.endAt;
-
-  const { data, error } = await supabase
-    .from("programs")
-    .update(updateData)
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) throw new Error(`Failed to update program: ${error.message}`);
-  return mapDbRowToProgram(data);
+  const row = await prisma.program.update({
+    where: { id },
+    data,
+  });
+  return mapPrismaToProgram(row);
 }
 
 export async function updateProgramStatus(
   id: string,
   status: ProgramStatus
 ): Promise<Program> {
-  const supabase = await createSupabaseServer();
-  const { data, error } = await supabase
-    .from("programs")
-    .update({ status })
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) throw new Error(`Failed to update program status: ${error.message}`);
-  return mapDbRowToProgram(data);
+  const row = await prisma.program.update({
+    where: { id },
+    data: { status },
+  });
+  return mapPrismaToProgram(row);
 }
 
 export async function updateProgramTheme(
   id: string,
   themeId: string | null
 ): Promise<Program> {
-  const supabase = await createSupabaseServer();
-  const { data, error } = await supabase
-    .from("programs")
-    .update({ theme_id: themeId })
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) throw new Error(`Failed to update program theme: ${error.message}`);
-  return mapDbRowToProgram(data);
+  const row = await prisma.program.update({
+    where: { id },
+    data: { themeId },
+  });
+  return mapPrismaToProgram(row);
 }
 
 export async function deleteProgramById(id: string): Promise<void> {
-  const supabase = await createSupabaseServer();
-  const { error } = await supabase
-    .from("programs")
-    .delete()
-    .eq("id", id);
-
-  if (error) throw new Error(`Failed to delete program: ${error.message}`);
+  await prisma.program.delete({ where: { id } });
 }

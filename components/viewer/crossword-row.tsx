@@ -42,7 +42,7 @@ export function CrosswordRowView({
 
       <div className="flex gap-0.5 md:gap-1" style={{ paddingLeft: `${offset * 2}px` }}>
         {Array.from({ length: row.answerLength }).map((_, i) => {
-          const char = row.answerText[i] ?? "";
+          const char = row.answerText?.[i] ?? "";
           const isHighlighted = row.highlightedIndexes.includes(i);
 
           return (

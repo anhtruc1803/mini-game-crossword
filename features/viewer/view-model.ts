@@ -19,7 +19,7 @@ export interface PublicCrosswordRow {
   id: string;
   rowOrder: number;
   clueText: string;
-  answerText: string;
+  answerText: string | null;
   answerLength: number;
   highlightedIndexes: number[];
   rowStatus: RowStatus;

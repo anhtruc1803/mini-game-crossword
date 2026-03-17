@@ -11,10 +11,7 @@ const trustedAssetUrlSchema = z
       "localhost",
       "127.0.0.1",
       "images.unsplash.com",
-      process.env.NEXT_PUBLIC_SUPABASE_URL
-        ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname
-        : null,
-    ].filter(Boolean) as string[];
+    ];
 
     return allowedHosts.includes(hostname);
   }, "Asset URL must be hosted on an approved domain");

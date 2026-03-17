@@ -59,7 +59,7 @@ export function ClueList({ rows, activeRowIndex }: ClueListProps) {
                   )}
                   {isRevealed && (
                     <p className="mt-0.5 font-mono text-xs font-bold text-green-400">
-                      {row.answerText}
+                      {row.answerText ?? ""}
                     </p>
                   )}
                 </div>

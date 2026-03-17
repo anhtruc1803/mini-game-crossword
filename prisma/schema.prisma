@@ -1,0 +1,125 @@
+// Prisma schema for Mini Game Ô Chữ
+// Database: SQLite (single file, local)
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ── Admin users ─────────────────────────────────────────────
+
+model AdminUser {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  username     String?  @unique
+  passwordHash String   @map("password_hash")
+  fullName     String?  @map("full_name")
+  role         String   @default("admin")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("admin_users")
+}
+
+// ── Themes ──────────────────────────────────────────────────
+
+model Theme {
+  id             String   @id @default(uuid())
+  name           String
+  logoUrl        String?  @map("logo_url")
+  bannerUrl      String?  @map("banner_url")
+  desktopBgUrl   String?  @map("desktop_bg_url")
+  mobileBgUrl    String?  @map("mobile_bg_url")
+  primaryColor   String   @default("#6366f1") @map("primary_color")
+  secondaryColor String   @default("#8b5cf6") @map("secondary_color")
+  accentColor    String   @default("#f59e0b") @map("accent_color")
+  overlayOpacity Float    @default(0.5) @map("overlay_opacity")
+  fontHeading    String?  @map("font_heading")
+  fontBody       String?  @map("font_body")
+  customCssJson  String?  @map("custom_css_json")
+  programs       Program[]
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("themes")
+}
+
+// ── Programs ────────────────────────────────────────────────
+
+model Program {
+  id          String    @id @default(uuid())
+  slug        String    @unique
+  title       String
+  description String?
+  status      String    @default("draft")
+  startAt     DateTime? @map("start_at")
+  endAt       DateTime? @map("end_at")
+  themeId     String?   @map("theme_id")
+  theme       Theme?    @relation(fields: [themeId], references: [id], onDelete: SetNull)
+  games       Game[]
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("programs")
+}
+
+// ── Games ───────────────────────────────────────────────────
+
+model Game {
+  id               String         @id @default(uuid())
+  programId        String         @map("program_id")
+  program          Program        @relation(fields: [programId], references: [id], onDelete: Cascade)
+  title            String
+  subtitle         String?
+  finalKeyword     String?        @map("final_keyword")
+  totalRows        Int            @default(0) @map("total_rows")
+  currentRowIndex  Int?           @map("current_row_index")
+  gameStatus       String         @default("draft") @map("game_status")
+  announcementText String?        @map("announcement_text")
+  rows             CrosswordRow[]
+  events           GameEvent[]
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  @@map("games")
+}
+
+// ── Crossword rows ──────────────────────────────────────────
+
+model CrosswordRow {
+  id                     String   @id @default(uuid())
+  gameId                 String   @map("game_id")
+  game                   Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  rowOrder               Int      @map("row_order")
+  clueText               String   @map("clue_text")
+  answerText             String   @map("answer_text")
+  answerLength           Int      @map("answer_length")
+  highlightedIndexesJson String   @default("[]") @map("highlighted_indexes_json")
+  rowStatus              String   @default("hidden") @map("row_status")
+  noteText               String?  @map("note_text")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  @@unique([gameId, rowOrder])
+  @@map("crossword_rows")
+}
+
+// ── Game events ─────────────────────────────────────────────
+
+model GameEvent {
+  id          String   @id @default(uuid())
+  gameId      String   @map("game_id")
+  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  eventType   String   @map("event_type")
+  message     String
+  payloadJson String?  @map("payload_json")
+  createdAt   DateTime @default(now()) @map("created_at")
+  createdBy   String?  @map("created_by")
+
+  @@map("game_events")
+}

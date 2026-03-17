@@ -2,78 +2,44 @@
  * Games — read operations.
  */
 
-import { createSupabaseServer } from "@/lib/supabase/server";
-import { mapDbRowToGame, mapDbRowToCrosswordRow, mapDbRowToGameEvent } from "./mapper";
+import { prisma } from "@/lib/db/prisma";
+import { mapPrismaToGame, mapPrismaToCrosswordRow, mapPrismaToGameEvent } from "./mapper";
 import type { Game, CrosswordRow, GameEvent } from "./types";
 
 export async function getGameByProgramId(programId: string): Promise<Game | null> {
-  const supabase = await createSupabaseServer();
-  const { data, error } = await supabase
-    .from("games")
-    .select("*")
-    .eq("program_id", programId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
-
-  if (error && error.code !== "PGRST116") {
-    throw new Error(`Failed to get game: ${error.message}`);
-  }
-  return data ? mapDbRowToGame(data) : null;
+  const row = await prisma.game.findFirst({
+    where: { programId },
+    orderBy: { createdAt: "desc" },
+  });
+  return row ? mapPrismaToGame(row) : null;
 }
 
 export async function getGameById(id: string): Promise<Game | null> {
-  const supabase = await createSupabaseServer();
-  const { data, error } = await supabase
-    .from("games")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error && error.code !== "PGRST116") {
-    throw new Error(`Failed to get game: ${error.message}`);
-  }
-  return data ? mapDbRowToGame(data) : null;
+  const row = await prisma.game.findUnique({ where: { id } });
+  return row ? mapPrismaToGame(row) : null;
 }
 
 export async function getGameRows(gameId: string): Promise<CrosswordRow[]> {
-  const supabase = await createSupabaseServer();
-  const { data, error } = await supabase
-    .from("crossword_rows")
-    .select("*")
-    .eq("game_id", gameId)
-    .order("row_order", { ascending: true });
-
-  if (error) throw new Error(`Failed to get rows: ${error.message}`);
-  return (data ?? []).map(mapDbRowToCrosswordRow);
+  const rows = await prisma.crosswordRow.findMany({
+    where: { gameId },
+    orderBy: { rowOrder: "asc" },
+  });
+  return rows.map(mapPrismaToCrosswordRow);
 }
 
 export async function getRowById(id: string): Promise<CrosswordRow | null> {
-  const supabase = await createSupabaseServer();
-  const { data, error } = await supabase
-    .from("crossword_rows")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error && error.code !== "PGRST116") {
-    throw new Error(`Failed to get row: ${error.message}`);
-  }
-  return data ? mapDbRowToCrosswordRow(data) : null;
+  const row = await prisma.crosswordRow.findUnique({ where: { id } });
+  return row ? mapPrismaToCrosswordRow(row) : null;
 }
 
 export async function getGameEvents(
   gameId: string,
   limit = 20
 ): Promise<GameEvent[]> {
-  const supabase = await createSupabaseServer();
-  const { data, error } = await supabase
-    .from("game_events")
-    .select("*")
-    .eq("game_id", gameId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  if (error) throw new Error(`Failed to get events: ${error.message}`);
-  return (data ?? []).map(mapDbRowToGameEvent);
+  const rows = await prisma.gameEvent.findMany({
+    where: { gameId },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+  });
+  return rows.map(mapPrismaToGameEvent);
 }
