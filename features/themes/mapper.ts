@@ -3,6 +3,7 @@
  */
 
 import type { Theme as PrismaTheme } from "@prisma/client";
+import { normalizeAssetUrl } from "@/lib/assets/urls";
 import type { Theme } from "./types";
 
 export function mapPrismaToTheme(row: PrismaTheme): Theme {
@@ -18,10 +19,10 @@ export function mapPrismaToTheme(row: PrismaTheme): Theme {
   return {
     id: row.id,
     name: row.name,
-    logoUrl: row.logoUrl,
-    bannerUrl: row.bannerUrl,
-    desktopBgUrl: row.desktopBgUrl,
-    mobileBgUrl: row.mobileBgUrl,
+    logoUrl: normalizeAssetUrl(row.logoUrl),
+    bannerUrl: normalizeAssetUrl(row.bannerUrl),
+    desktopBgUrl: normalizeAssetUrl(row.desktopBgUrl),
+    mobileBgUrl: normalizeAssetUrl(row.mobileBgUrl),
     primaryColor: row.primaryColor,
     secondaryColor: row.secondaryColor,
     accentColor: row.accentColor,

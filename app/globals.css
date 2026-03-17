@@ -71,3 +71,38 @@ body {
     linear-gradient(90deg, rgba(148, 163, 184, 0.09) 1px, transparent 1px);
   background-size: 26px 26px;
 }
+
+@keyframes birthday-float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-16px);
+  }
+}
+
+@keyframes sparkle-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.25);
+  }
+}
+
+.birthday-float {
+  animation-name: birthday-float;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in-out;
+}
+
+.birthday-sparkle {
+  animation-name: sparkle-pulse;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in-out;
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.35);
+}

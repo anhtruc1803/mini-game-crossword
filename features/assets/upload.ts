@@ -12,6 +12,7 @@ const SAFE_BUCKET_PATTERN = /^[a-z0-9][a-z0-9-_]*$/i;
 
 /** Root directory for uploaded files (relative to project root). */
 const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads");
+const DATA_UPLOADS_DIR = path.join(process.cwd(), "data", "uploads");
 
 function validateImage(file: File) {
   if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
@@ -27,46 +28,51 @@ async function ensureDir(dir: string) {
   await fs.mkdir(dir, { recursive: true });
 }
 
-function resolveUploadPath(bucket: string, filePath: string) {
+function resolveUploadPaths(bucket: string, filePath: string) {
   if (!SAFE_BUCKET_PATTERN.test(bucket)) {
     throw new AppError("Invalid upload bucket.", "invalid_bucket", 400);
   }
 
-  const bucketRoot = path.resolve(UPLOADS_DIR, bucket);
-  const targetPath = path.resolve(bucketRoot, filePath);
+  const roots = [UPLOADS_DIR, DATA_UPLOADS_DIR].map((root) => path.resolve(root, bucket));
+  const targets = roots.map((bucketRoot) => {
+    const targetPath = path.resolve(bucketRoot, filePath);
 
-  if (!targetPath.startsWith(`${bucketRoot}${path.sep}`) && targetPath !== bucketRoot) {
-    throw new AppError("Invalid upload path.", "invalid_upload_path", 400);
-  }
+    if (!targetPath.startsWith(`${bucketRoot}${path.sep}`) && targetPath !== bucketRoot) {
+      throw new AppError("Invalid upload path.", "invalid_upload_path", 400);
+    }
 
-  return {
-    bucketRoot,
-    targetPath,
-  };
+    return {
+      bucketRoot,
+      targetPath,
+    };
+  });
+
+  return targets;
 }
 
 export async function uploadImage(file: File, bucket: string, filePath: string): Promise<string> {
   validateImage(file);
 
-  const { bucketRoot, targetPath } = resolveUploadPath(bucket, filePath);
-  const fullDir = path.join(bucketRoot, path.dirname(filePath));
-  await ensureDir(fullDir);
-
   const arrayBuffer = await file.arrayBuffer();
-  await fs.writeFile(targetPath, Buffer.from(arrayBuffer));
+  const buffer = Buffer.from(arrayBuffer);
 
-  // Return the public URL path
-  return `/uploads/${bucket}/${filePath}`;
+  for (const { bucketRoot, targetPath } of resolveUploadPaths(bucket, filePath)) {
+    const fullDir = path.join(bucketRoot, path.dirname(filePath));
+    await ensureDir(fullDir);
+    await fs.writeFile(targetPath, buffer);
+  }
+
+  return `/media/${bucket}/${filePath}`;
 }
 
 export async function deleteImage(bucket: string, filePath: string): Promise<void> {
-  const { targetPath } = resolveUploadPath(bucket, filePath);
-  try {
-    await fs.unlink(targetPath);
-  } catch (error) {
-    // Ignore if file doesn't exist
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-      throw new AppError(`Failed to delete image: ${(error as Error).message}`, "delete_failed", 500, false);
+  for (const { targetPath } of resolveUploadPaths(bucket, filePath)) {
+    try {
+      await fs.unlink(targetPath);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        throw new AppError(`Failed to delete image: ${(error as Error).message}`, "delete_failed", 500, false);
+      }
     }
   }
 }

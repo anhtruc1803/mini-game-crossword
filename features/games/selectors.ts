@@ -9,14 +9,20 @@ import { ROW_STATUS } from "./constants";
 type HintRow = Pick<CrosswordRow, "answerText" | "highlightedIndexes" | "rowStatus">;
 
 export function buildFinalKeywordHint(rows: HintRow[]): (string | null)[] {
-  return rows.map((row) => {
-    if (row.rowStatus !== ROW_STATUS.ANSWER_REVEALED) return null;
+  return rows.flatMap((row) => {
+    const safeIndexes = row.highlightedIndexes.filter(
+      (i) => i >= 0 && i < row.answerText.length
+    );
 
-    const chars = row.highlightedIndexes
-      .filter((i) => i >= 0 && i < row.answerText.length)
-      .map((i) => row.answerText[i]);
+    if (safeIndexes.length === 0) {
+      return [null];
+    }
 
-    return chars.length > 0 ? chars.join("") : null;
+    if (row.rowStatus !== ROW_STATUS.ANSWER_REVEALED) {
+      return safeIndexes.map(() => null);
+    }
+
+    return safeIndexes.map((i) => row.answerText[i] ?? null);
   });
 }
 

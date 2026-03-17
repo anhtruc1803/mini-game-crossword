@@ -44,6 +44,13 @@ export const en: TranslationKeys = {
     noUpdatesYet: "No updates yet. The timeline will appear here once the game starts.",
     activeQuestion: "Active question",
     finalKeywordReady: "Final keyword revealed",
+    eventGameStarted: "Game started",
+    eventGamePaused: "Game paused",
+    eventGameResumed: "Game resumed",
+    eventGameEnded: "Game ended",
+    eventClueOpened: "Clue opened",
+    eventAnswerRevealed: "Answer revealed",
+    eventRowAdvanced: "Moved to next row",
   },
 
   admin: {

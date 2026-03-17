@@ -9,6 +9,23 @@ interface AnnouncementPanelProps {
   events: GameEvent[];
 }
 
+function getEventLabel(
+  eventType: string,
+  t: ReturnType<typeof useTranslation>["t"]
+) {
+  const labels: Record<string, string> = {
+    game_started: t.viewer.eventGameStarted,
+    game_paused: t.viewer.eventGamePaused,
+    game_resumed: t.viewer.eventGameResumed,
+    game_ended: t.viewer.eventGameEnded,
+    clue_opened: t.viewer.eventClueOpened,
+    answer_revealed: t.viewer.eventAnswerRevealed,
+    row_advanced: t.viewer.eventRowAdvanced,
+  };
+
+  return labels[eventType] ?? eventType.replaceAll("_", " ");
+}
+
 function formatEventTime(dateString: string, locale: "vi" | "en") {
   const date = new Date(dateString);
   const diffSeconds = Math.round((date.getTime() - Date.now()) / 1000);
@@ -80,7 +97,7 @@ export function AnnouncementPanel({
                     </span>
                   </div>
                   <p className="mt-2 text-xs uppercase tracking-[0.24em] text-white/35">
-                    {event.eventType.replaceAll("_", " ")}
+                    {getEventLabel(event.eventType, t)}
                   </p>
                 </div>
               </div>

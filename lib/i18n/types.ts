@@ -49,6 +49,13 @@ export type TranslationKeys = {
     noUpdatesYet: string;
     activeQuestion: string;
     finalKeywordReady: string;
+    eventGameStarted: string;
+    eventGamePaused: string;
+    eventGameResumed: string;
+    eventGameEnded: string;
+    eventClueOpened: string;
+    eventAnswerRevealed: string;
+    eventRowAdvanced: string;
   };
 
   // Admin common

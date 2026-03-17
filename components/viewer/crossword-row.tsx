@@ -53,14 +53,15 @@ export function CrosswordRowView({
           {Array.from({ length: row.answerLength }).map((_, i) => {
             const char = row.answerText?.[i] ?? "";
             const isHighlighted = row.highlightedIndexes.includes(i);
+            const hiddenMarker = isClueVisible ? "•" : "·";
 
             return (
               <div
                 key={i}
                 className={cn(
                   "flex h-11 w-11 items-center justify-center rounded-2xl border text-sm font-bold uppercase transition-all duration-300 sm:h-12 sm:w-12 sm:text-base",
-                  isHidden && "border-white/8 bg-white/5 text-transparent",
-                  isClueVisible && "border-white/14 bg-white/7 text-white/15",
+                  isHidden && "border-white/10 bg-white/7 text-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]",
+                  isClueVisible && "border-white/16 bg-white/9 text-white/35",
                   isRevealed &&
                     !isHighlighted &&
                     "border-white/14 bg-white/12 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
@@ -70,7 +71,7 @@ export function CrosswordRowView({
                   isActive && !isRevealed && "border-[var(--primary)]/18 bg-[var(--primary)]/8"
                 )}
               >
-                {isRevealed ? char : ""}
+                {isRevealed ? char : hiddenMarker}
               </div>
             );
           })}

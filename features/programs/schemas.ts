@@ -8,8 +8,8 @@ const programImageSchema = z
   .trim()
   .min(1)
   .max(500)
-  .refine((value) => value.startsWith("/uploads/programs/"), {
-    message: "Program image must come from the local uploads path",
+  .refine((value) => value.startsWith("/uploads/programs/") || value.startsWith("/media/programs/"), {
+    message: "Program image must come from the local media path",
   });
 
 export const createProgramSchema = z

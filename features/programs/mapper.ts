@@ -3,6 +3,7 @@
  */
 
 import type { Program as PrismaProgram } from "@prisma/client";
+import { normalizeAssetUrl } from "@/lib/assets/urls";
 import type { Program } from "./types";
 
 export function mapPrismaToProgram(row: PrismaProgram): Program {
@@ -11,7 +12,7 @@ export function mapPrismaToProgram(row: PrismaProgram): Program {
     slug: row.slug,
     title: row.title,
     description: row.description,
-    imageUrl: row.imageUrl,
+    imageUrl: normalizeAssetUrl(row.imageUrl),
     status: row.status as Program["status"],
     startAt: row.startAt?.toISOString() ?? null,
     endAt: row.endAt?.toISOString() ?? null,

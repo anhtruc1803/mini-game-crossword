@@ -5,6 +5,8 @@ import { ViewerFooter } from "@/components/shared/viewer-footer";
 import { LanguageSwitcher } from "@/components/shared/language-switcher";
 import { ResilientImage } from "@/components/shared/resilient-image";
 import { vi } from "@/lib/i18n/locales/vi";
+import { BirthdayEffects } from "@/components/viewer/birthday-effects";
+import { PointerGlow } from "@/components/viewer/pointer-glow";
 
 interface ViewerPageProps {
   params: Promise<{ programSlug: string }>;
@@ -18,6 +20,11 @@ export default async function ViewerPage({ params }: ViewerPageProps) {
   if (!snapshot) notFound();
 
   const { program, theme } = snapshot;
+  const birthdaySignal = `${program.title} ${program.slug} ${program.description ?? ""}`.toLowerCase();
+  const isBirthdayProgram =
+    birthdaySignal.includes("sinh nhật") ||
+    birthdaySignal.includes("sinh nhat") ||
+    birthdaySignal.includes("birthday");
 
   const themeStyle: React.CSSProperties = theme
     ? ({
@@ -29,6 +36,8 @@ export default async function ViewerPage({ params }: ViewerPageProps) {
 
   return (
     <main className="relative min-h-screen overflow-hidden" style={themeStyle}>
+      <PointerGlow />
+      <BirthdayEffects enabled={isBirthdayProgram} />
       {theme?.desktopBgUrl && (
         <div
           className="fixed inset-0 hidden bg-cover bg-center bg-no-repeat opacity-35 md:block"

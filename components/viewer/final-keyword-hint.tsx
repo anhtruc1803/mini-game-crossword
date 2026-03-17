@@ -27,7 +27,9 @@ export function FinalKeywordHint({
           <p className="text-xs uppercase tracking-[0.24em] text-white/42">
             {t.viewer.keyword}
           </p>
-          <h3 className="mt-2 text-2xl font-semibold text-white">{t.viewer.keyword}</h3>
+          <h3 className="mt-2 whitespace-nowrap text-2xl font-semibold text-white">
+            {t.viewer.keyword}
+          </h3>
         </div>
         <p className="text-sm text-white/56">
           {gameEnded && allRevealed ? t.viewer.finalKeywordReady : t.viewer.boardSubtitle}

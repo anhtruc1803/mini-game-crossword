@@ -31,7 +31,7 @@ describe("mapPrismaToProgram", () => {
       slug: "test-prog",
       title: "Test Program",
       description: "A test",
-      imageUrl: "/uploads/programs/abc-123/cover.webp",
+      imageUrl: "/media/programs/abc-123/cover.webp",
       status: "draft",
       startAt: "2024-01-01T00:00:00.000Z",
       endAt: null,

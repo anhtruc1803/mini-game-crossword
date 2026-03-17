@@ -18,5 +18,5 @@ export async function removeThemeAsset(bucket: string, path: string) {
 }
 
 export async function getSignedAssetUrl(bucket: string, path: string) {
-  return `/uploads/${bucket}/${path}`;
+  return `/media/${bucket}/${path}`;
 }

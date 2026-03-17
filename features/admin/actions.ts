@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { getBucketFilePath } from "@/lib/assets/urls";
 import { ROUTES } from "@/lib/constants/routes";
 import { toErrorMessage, isRedirectError } from "@/lib/security/errors";
 import { getClientIp } from "@/lib/security/request";
@@ -57,15 +58,6 @@ function getOptionalImageFile(formData: FormData, fieldName: string) {
   }
 
   return value;
-}
-
-function getBucketFilePath(publicPath: string, bucket: string) {
-  const prefix = `/uploads/${bucket}/`;
-  if (!publicPath.startsWith(prefix)) {
-    return null;
-  }
-
-  return publicPath.slice(prefix.length);
 }
 
 async function withAdminMutation<T>(name: string, fn: () => Promise<T>) {

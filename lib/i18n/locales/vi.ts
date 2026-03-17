@@ -44,6 +44,13 @@ export const vi: TranslationKeys = {
     noUpdatesYet: "Chưa có cập nhật nào. Dòng thời gian sẽ hiển thị khi chương trình bắt đầu.",
     activeQuestion: "Câu hỏi hiện tại",
     finalKeywordReady: "Từ khóa cuối đã mở",
+    eventGameStarted: "Game đã bắt đầu",
+    eventGamePaused: "Game tạm dừng",
+    eventGameResumed: "Game tiếp tục",
+    eventGameEnded: "Game đã kết thúc",
+    eventClueOpened: "Đã mở câu hỏi",
+    eventAnswerRevealed: "Đã lộ đáp án",
+    eventRowAdvanced: "Chuyển sang câu tiếp theo",
   },
 
   admin: {

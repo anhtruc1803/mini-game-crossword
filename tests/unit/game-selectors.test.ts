@@ -41,7 +41,7 @@ describe("buildFinalKeywordHint", () => {
     const rows = [
       makeRow({ rowStatus: "answer_revealed", answerText: "HELLO", highlightedIndexes: [0, 4] }),
     ];
-    expect(buildFinalKeywordHint(rows)).toEqual(["HO"]);
+    expect(buildFinalKeywordHint(rows)).toEqual(["H", "O"]);
   });
 
   it("handles mixed row statuses", () => {
@@ -63,6 +63,13 @@ describe("buildFinalKeywordHint", () => {
       makeRow({ rowStatus: "answer_revealed", answerText: "AB", highlightedIndexes: [5, 10] }),
     ];
     expect(buildFinalKeywordHint(rows)).toEqual([null]);
+  });
+
+  it("creates one placeholder per hidden highlighted letter", () => {
+    const rows = [
+      makeRow({ rowStatus: "hidden", answerText: "BIRTHDAY", highlightedIndexes: [0, 2, 4] }),
+    ];
+    expect(buildFinalKeywordHint(rows)).toEqual([null, null, null]);
   });
 });
 
