@@ -1,92 +1,177 @@
 # Database Schema
 
-> Schema will be fully defined in Phase 2 with Supabase migrations.
+The database source of truth is `prisma/schema.prisma`.
+This document summarizes the current schema in domain language.
 
-## Tables (planned)
+## Engine
 
-### programs
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid | PK, default gen_random_uuid() |
-| slug | text | unique, used in public URL |
-| title | text | not null |
-| description | text | nullable |
-| status | text | 'draft' / 'live' / 'ended' |
-| start_at | timestamptz | nullable |
-| end_at | timestamptz | nullable |
-| theme_id | uuid | FK → themes.id, nullable |
-| created_at | timestamptz | default now() |
-| updated_at | timestamptz | default now() |
+- ORM: Prisma
+- Database: SQLite
+- Connection string source: `DATABASE_URL`
+
+The default local pattern is:
+
+```dotenv
+DATABASE_URL="file:../data/app.db"
+```
+
+Because the Prisma schema lives in `prisma/`, the `../data/app.db` path resolves to `data/app.db` at the project root.
+
+## Models
+
+### admin_users
+
+Stores local admin accounts for the custom sign-in flow.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `id` | `String` | primary key, UUID |
+| `email` | `String` | unique |
+| `username` | `String?` | unique, optional |
+| `password_hash` | `String` | bcrypt hash |
+| `full_name` | `String?` | optional |
+| `role` | `String` | currently expected to be `admin` |
+| `is_active` | `Boolean` | soft-disable flag |
+| `created_at` | `DateTime` | default now |
+| `updated_at` | `DateTime` | auto-updated |
 
 ### themes
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid | PK |
-| name | text | not null |
-| logo_url | text | nullable |
-| banner_url | text | nullable |
-| desktop_bg_url | text | nullable |
-| mobile_bg_url | text | nullable |
-| primary_color | text | default '#6366f1' |
-| secondary_color | text | default '#8b5cf6' |
-| accent_color | text | default '#f59e0b' |
-| overlay_opacity | real | default 0.5 |
-| font_heading | text | nullable |
-| font_body | text | nullable |
-| custom_css_json | jsonb | nullable |
-| created_at | timestamptz | default now() |
-| updated_at | timestamptz | default now() |
+
+Theme and branding configuration for a program.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `id` | `String` | primary key, UUID |
+| `name` | `String` | required |
+| `logo_url` | `String?` | optional |
+| `banner_url` | `String?` | optional |
+| `desktop_bg_url` | `String?` | optional |
+| `mobile_bg_url` | `String?` | optional |
+| `primary_color` | `String` | hex color |
+| `secondary_color` | `String` | hex color |
+| `accent_color` | `String` | hex color |
+| `overlay_opacity` | `Float` | 0 to 1 |
+| `font_heading` | `String?` | optional |
+| `font_body` | `String?` | optional |
+| `custom_css_json` | `String?` | JSON string, optional |
+| `created_at` | `DateTime` | default now |
+| `updated_at` | `DateTime` | auto-updated |
+
+### programs
+
+Top-level event or show container.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `id` | `String` | primary key, UUID |
+| `slug` | `String` | unique, used in public URL |
+| `title` | `String` | required |
+| `description` | `String?` | optional |
+| `status` | `String` | `draft`, `live`, `ended` |
+| `start_at` | `DateTime?` | optional |
+| `end_at` | `DateTime?` | optional |
+| `theme_id` | `String?` | nullable FK to `themes` |
+| `created_at` | `DateTime` | default now |
+| `updated_at` | `DateTime` | auto-updated |
+
+Relations:
+
+- one program optionally has one active linked theme
+- one program can have many games
 
 ### games
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid | PK |
-| program_id | uuid | FK → programs.id |
-| title | text | not null |
-| subtitle | text | nullable |
-| final_keyword | text | nullable |
-| total_rows | int | default 0 |
-| current_row_index | int | nullable |
-| game_status | text | 'draft' / 'live' / 'paused' / 'ended' |
-| announcement_text | text | nullable |
-| created_at | timestamptz | default now() |
-| updated_at | timestamptz | default now() |
+
+Crossword game state attached to a program.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `id` | `String` | primary key, UUID |
+| `program_id` | `String` | FK to `programs` |
+| `title` | `String` | required |
+| `subtitle` | `String?` | optional |
+| `final_keyword` | `String?` | optional |
+| `total_rows` | `Int` | cached row count |
+| `current_row_index` | `Int?` | nullable active pointer |
+| `game_status` | `String` | `draft`, `live`, `paused`, `ended` |
+| `announcement_text` | `String?` | optional |
+| `created_at` | `DateTime` | default now |
+| `updated_at` | `DateTime` | auto-updated |
+
+Relations:
+
+- one game belongs to one program
+- one game has many crossword rows
+- one game has many game events
 
 ### crossword_rows
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid | PK |
-| game_id | uuid | FK → games.id |
-| row_order | int | position in crossword |
-| clue_text | text | the question/clue |
-| answer_text | text | the answer |
-| answer_length | int | cached length of answer_text |
-| highlighted_indexes_json | jsonb | array of 0-based indexes |
-| row_status | text | 'hidden' / 'clue_visible' / 'answer_revealed' |
-| note_text | text | nullable, admin note |
-| created_at | timestamptz | default now() |
-| updated_at | timestamptz | default now() |
+
+Question and answer rows for a game board.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `id` | `String` | primary key, UUID |
+| `game_id` | `String` | FK to `games` |
+| `row_order` | `Int` | 0-based row order |
+| `clue_text` | `String` | required |
+| `answer_text` | `String` | required, uppercase via validation |
+| `answer_length` | `Int` | cached answer length |
+| `highlighted_indexes_json` | `String` | JSON array of indexes |
+| `row_status` | `String` | `hidden`, `clue_visible`, `answer_revealed` |
+| `note_text` | `String?` | admin note |
+| `created_at` | `DateTime` | default now |
+| `updated_at` | `DateTime` | auto-updated |
+
+Important constraint:
+
+- unique `(game_id, row_order)`
 
 ### game_events
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid | PK |
-| game_id | uuid | FK → games.id |
-| event_type | text | see EVENT_TYPES in constants.ts |
-| message | text | human-readable description |
-| payload_json | jsonb | nullable, extra data |
-| created_at | timestamptz | default now() |
-| created_by | uuid | FK → auth.users.id, nullable |
 
-## Indexes (planned)
-- `programs.slug` — unique index
-- `games.program_id` — for lookup by program
-- `crossword_rows.game_id` + `row_order` — for ordered retrieval
-- `game_events.game_id` + `created_at` — for event log queries
+Human-readable audit trail for game actions.
 
-## RLS Policies (planned)
-- `programs`: public read, admin write
-- `themes`: public read, admin write
-- `games`: public read, admin write
-- `crossword_rows`: public read (filtered by row_status), admin write
-- `game_events`: public read, admin insert
+| Field | Type | Notes |
+| --- | --- | --- |
+| `id` | `String` | primary key, UUID |
+| `game_id` | `String` | FK to `games` |
+| `event_type` | `String` | see `EVENT_TYPES` |
+| `message` | `String` | display-ready event text |
+| `payload_json` | `String?` | optional JSON string |
+| `created_at` | `DateTime` | default now |
+| `created_by` | `String?` | optional actor ID |
+
+## Constraints and relationships
+
+- `programs.slug` is unique
+- `admin_users.email` is unique
+- `admin_users.username` is unique when present
+- `crossword_rows(game_id, row_order)` is unique
+- deleting a program cascades to its games
+- deleting a game cascades to its rows and events
+- deleting a theme sets `program.theme_id` to `null`
+
+## Session storage note
+
+There is no `sessions` table.
+Admin sessions are stateless signed cookies verified from `SESSION_SECRET`.
+
+That means:
+
+- session invalidation mainly happens by deleting the cookie
+- admin authorization is still checked against `admin_users` on the server
+- disabling an admin user in the database still blocks protected actions and pages
+
+## Migration workflow
+
+Schema changes should use Prisma migrations.
+
+Typical flow:
+
+```bash
+npm exec prisma migrate dev --name your_change_name
+```
+
+Production deploy flow:
+
+```bash
+npm exec prisma migrate deploy
+```

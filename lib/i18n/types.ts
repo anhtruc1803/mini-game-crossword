@@ -68,6 +68,10 @@ export type TranslationKeys = {
     slugHelp: string;
     descriptionLabel: string;
     descriptionPlaceholder: string;
+    imageLabel: string;
+    imageHelp: string;
+    currentImage: string;
+    imagePreviewAlt: string;
   };
 
   // Admin: Program status

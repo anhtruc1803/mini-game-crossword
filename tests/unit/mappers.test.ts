@@ -17,6 +17,7 @@ describe("mapPrismaToProgram", () => {
       slug: "test-prog",
       title: "Test Program",
       description: "A test",
+      imageUrl: "/uploads/programs/abc-123/cover.webp",
       status: "draft",
       startAt: new Date("2024-01-01T00:00:00Z"),
       endAt: null,
@@ -30,6 +31,7 @@ describe("mapPrismaToProgram", () => {
       slug: "test-prog",
       title: "Test Program",
       description: "A test",
+      imageUrl: "/uploads/programs/abc-123/cover.webp",
       status: "draft",
       startAt: "2024-01-01T00:00:00.000Z",
       endAt: null,
@@ -45,6 +47,7 @@ describe("mapPrismaToProgram", () => {
       slug: "s",
       title: "T",
       description: null,
+      imageUrl: null,
       status: "live",
       startAt: null,
       endAt: null,
@@ -54,6 +57,7 @@ describe("mapPrismaToProgram", () => {
     };
     const result = mapPrismaToProgram(row);
     expect(result.description).toBeNull();
+    expect(result.imageUrl).toBeNull();
     expect(result.themeId).toBeNull();
   });
 });

@@ -1,36 +1,36 @@
 # Ubuntu Deployment Guide
 
-This guide covers production deployment for **Ubuntu 22.04 LTS** and **Ubuntu 24.04 LTS** using:
+This guide covers production deployment for Ubuntu 22.04 LTS and Ubuntu 24.04 LTS using the current codebase:
 
+- Next.js app
+- Prisma
+- SQLite
+- signed cookie admin auth
+- local filesystem asset storage
+- optional Upstash Redis rate limiting
+
+## 1. Recommended deployment model
+
+This project is currently best suited to a single-server deployment.
+
+- `nginx` reverse proxy
+- `systemd` process manager
 - Node.js 22 LTS
-- `npm`
-- `systemd`
-- `nginx`
-- `certbot`
-- Supabase for database, auth, realtime, and storage
+- SQLite file on local disk
+- optional Upstash Redis for rate limiting
 
-## 1. Recommended production architecture
-
-- Ubuntu server runs the Next.js app with `next start`
-- `nginx` terminates HTTPS and reverse proxies to the app
-- `systemd` keeps the Node.js process alive across reboots
-- Supabase hosts Postgres, Auth, Realtime, and Storage
-- Optional Upstash Redis handles distributed rate limiting
+If you need multiple app instances or shared storage, plan a later migration to PostgreSQL and external object storage.
 
 ## 2. Server requirements
 
 - Ubuntu 22.04 or 24.04
-- 2 vCPU
+- 2 vCPU minimum
 - 2 GB RAM minimum
 - 20 GB disk
-- Domain name pointed to the server
-- A non-root sudo user
+- non-root sudo user
+- domain pointed to the server
 
-For small events and internal use this is enough. If you expect a large audience, start with 4 GB RAM and monitor memory during livestreams.
-
-## 3. Prepare the server
-
-Update packages:
+## 3. Install system packages
 
 ```bash
 sudo apt update
@@ -49,8 +49,6 @@ sudo ufw status
 
 ## 4. Install Node.js 22 LTS
 
-Install Node.js 22 from NodeSource:
-
 ```bash
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt install -y nodejs
@@ -58,89 +56,106 @@ node -v
 npm -v
 ```
 
-The project should be deployed with Node.js 20+.
-Node.js 22 LTS is the recommended choice for Ubuntu 22.04 and 24.04.
-
-## 5. Create application directory
+## 5. Clone the project
 
 ```bash
 sudo mkdir -p /var/www/mini-game-crossword
 sudo chown -R $USER:$USER /var/www/mini-game-crossword
 cd /var/www/mini-game-crossword
-```
-
-Clone the repository:
-
-```bash
 git clone https://github.com/anhtruc1803/mini-game-crossword.git .
 git checkout main
 ```
 
-## 6. Configure environment variables
+## 6. Create runtime directories
 
-Create the production environment file:
+The app expects a writable SQLite location and a writable upload directory.
+
+```bash
+mkdir -p data
+mkdir -p public/uploads
+```
+
+## 7. Configure environment variables
+
+Create the production env file:
 
 ```bash
 cp .env.example .env.production
 nano .env.production
 ```
 
-Use this template:
+Recommended production template:
 
 ```dotenv
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+DATABASE_URL="file:../data/app.db"
+SESSION_SECRET="replace-with-a-long-random-secret"
 
-# Optional but recommended for multi-instance or production rate limiting
+# Optional: rate limit storage
 UPSTASH_REDIS_REST_URL=https://your-upstash-instance.upstash.io
 UPSTASH_REDIS_REST_TOKEN=your-upstash-token
+
+# Optional: only needed if you want prisma db seed to create an admin user
+SEED_ADMIN_EMAIL=admin@example.com
+SEED_ADMIN_PASSWORD=change-me-before-seeding
 ```
 
-Notes:
+Required variables:
 
-- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are required
-- `SUPABASE_SERVICE_ROLE_KEY` is required if you use secure image uploads to Supabase Storage
-- If Redis variables are missing, rate limiting falls back to in-memory storage and will reset on restart
+- `DATABASE_URL`
+- `SESSION_SECRET`
 
-## 7. Prepare Supabase
+Optional variables:
 
-Before the first production run, apply the SQL migrations in order:
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
+- `SEED_ADMIN_EMAIL`
+- `SEED_ADMIN_PASSWORD`
 
-- `supabase/migrations/00001_initial_schema.sql`
-- `supabase/migrations/00002_security_hardening.sql`
+Important notes:
 
-You can run them from the Supabase SQL Editor or your normal migration workflow.
+- `SESSION_SECRET` must be a strong random string in production
+- do not commit `.env.production`
+- if Redis env vars are missing, rate limiting falls back to in-memory counters
 
-After running migrations, insert at least one admin account into `admin_users`.
-Use the real Supabase Auth user ID of the account that should access `/admin`.
-
-Example:
-
-```sql
-insert into public.admin_users (user_id)
-values ('00000000-0000-0000-0000-000000000000');
-```
-
-If you want asset uploads from the admin UI:
-
-- Create the storage buckets required by your theme/assets flow
-- Keep the buckets private
-- Serve files through signed URLs only
-
-## 8. Install dependencies and build
+## 8. Install dependencies and prepare Prisma
 
 ```bash
 cd /var/www/mini-game-crossword
 npm ci
+npm exec prisma generate
+npm exec prisma migrate deploy
+```
+
+Optional seed step:
+
+```bash
+npm exec prisma db seed
+```
+
+If you run `db seed` without `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD`, the script will skip admin creation and only prepare demo data.
+
+## 9. Build and verify before starting
+
+```bash
 npm run lint
 npm test
 npm run build
 ```
 
-If `npm test` is optional for your deployment pipeline you can skip it, but `npm run build` should always pass before restart.
+## 10. Set file permissions
 
-## 9. Create the systemd service
+The service user must be able to write:
+
+- `data/`
+- `public/uploads/`
+
+Example:
+
+```bash
+sudo chown -R www-data:www-data /var/www/mini-game-crossword
+```
+
+## 11. Create systemd service
 
 Create the unit file:
 
@@ -148,7 +163,7 @@ Create the unit file:
 sudo nano /etc/systemd/system/mini-game-crossword.service
 ```
 
-Use this configuration:
+Use this config:
 
 ```ini
 [Unit]
@@ -173,13 +188,7 @@ TimeoutStopSec=30
 WantedBy=multi-user.target
 ```
 
-Grant ownership to the runtime user:
-
-```bash
-sudo chown -R www-data:www-data /var/www/mini-game-crossword
-```
-
-Enable and start the service:
+Enable and start it:
 
 ```bash
 sudo systemctl daemon-reload
@@ -194,15 +203,15 @@ View logs:
 journalctl -u mini-game-crossword -f
 ```
 
-## 10. Configure nginx
+## 12. Configure nginx
 
-Create an nginx site:
+Create the site file:
 
 ```bash
 sudo nano /etc/nginx/sites-available/mini-game-crossword
 ```
 
-Use this config and replace `example.com`:
+Example config:
 
 ```nginx
 server {
@@ -226,45 +235,26 @@ server {
 }
 ```
 
-Enable the site and test nginx:
+Enable and reload:
 
 ```bash
 sudo ln -s /etc/nginx/sites-available/mini-game-crossword /etc/nginx/sites-enabled/mini-game-crossword
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-If the default site is still enabled, remove it:
-
-```bash
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-## 11. Enable HTTPS with Let's Encrypt
-
-Install Certbot:
+## 13. Enable HTTPS
 
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
-```
-
-Request the certificate:
-
-```bash
 sudo certbot --nginx -d example.com -d www.example.com
-```
-
-Test auto-renewal:
-
-```bash
 sudo certbot renew --dry-run
 ```
 
-## 12. Verify the deployment
+## 14. Verify deployment
 
-Check these endpoints after the service is up:
+Check:
 
 - `https://example.com/`
 - `https://example.com/admin/login`
@@ -282,92 +272,74 @@ Expected health response:
 }
 ```
 
-If `/api/health` returns `degraded`, verify:
+If health is degraded:
 
-- `.env.production` values are correct
-- Supabase is reachable from the server
-- migrations have been applied
-- the `programs` table exists
+- confirm `DATABASE_URL` is correct
+- confirm the SQLite file path is writable
+- confirm Prisma migrations were applied
+- confirm `prisma.program.count()` can run
 
-## 13. Deployment update procedure
+## 15. Update procedure
 
-Use this flow for future releases:
+For later deployments:
 
 ```bash
 cd /var/www/mini-game-crossword
 git pull origin main
 npm ci
+npm exec prisma generate
+npm exec prisma migrate deploy
 npm run build
 sudo systemctl restart mini-game-crossword
 sudo systemctl status mini-game-crossword
 ```
 
-If a release includes schema changes:
+## 16. Backup recommendations
 
-- run the new Supabase migration first
-- then deploy the application
+At minimum back up:
 
-This avoids runtime mismatches between code and database schema.
+- `data/app.db`
+- `.env.production`
+- `public/uploads/`
 
-## 14. Operational recommendations
+SQLite backups are simple, but they matter because the database is local to the app server.
 
-- Keep `SUPABASE_SERVICE_ROLE_KEY` only on the server
-- Do not commit `.env.production`
-- Use Redis in production if you may run more than one app instance
-- Monitor `journalctl` logs during livestream events
-- Restart only after `npm run build` succeeds
-- Back up your Supabase project and export schema regularly
-
-## 15. Optional hardening
-
-- Put the server behind Cloudflare if you expect burst traffic
-- Restrict SSH to key-based login only
-- Disable password login in `sshd_config`
-- Use `fail2ban` for SSH protection
-- Add a deployment user separate from your personal account
-- Send app logs to a centralized log service if uptime matters
-
-## 16. Troubleshooting
+## 17. Troubleshooting
 
 ### App fails to start
 
 Check:
 
-- `journalctl -u mini-game-crossword -n 200`
-- `cat /var/www/mini-game-crossword/.env.production`
-- `node -v`
+```bash
+journalctl -u mini-game-crossword -n 200
+cat /var/www/mini-game-crossword/.env.production
+```
 
 Common causes:
 
-- missing Supabase environment variables
-- `SUPABASE_SERVICE_ROLE_KEY` missing while upload flow is enabled
-- build was not run after updating dependencies
+- missing `DATABASE_URL`
+- missing `SESSION_SECRET`
+- SQLite file path not writable
+- Prisma migrations not deployed
 
-### Nginx returns 502 Bad Gateway
-
-Check:
-
-- the Node.js service is running
-- the app is listening on port `3000`
-- nginx `proxy_pass` points to `127.0.0.1:3000`
-
-Useful commands:
-
-```bash
-sudo systemctl status mini-game-crossword
-sudo systemctl status nginx
-sudo nginx -t
-```
-
-### Admin cannot log in
+### Admin login works and then immediately redirects back to login
 
 Check:
 
-- the user exists in Supabase Auth
-- the user ID exists in `public.admin_users`
-- `/admin` is not blocked by stale cookies
+- `SESSION_SECRET` is present and stable
+- system time is correct
+- cookies are not being stripped by the reverse proxy
 
-### Rate limit behaves inconsistently across restarts
+### Uploads fail
 
-That is expected if Redis is not configured.
-Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` for stable production rate limiting.
+Check:
+
+- `public/uploads/` exists
+- service user can write into `public/uploads/`
+- file type and size match the upload validation rules
+
+### Viewer updates feel slow
+
+Current architecture uses polling, not realtime subscriptions.
+That is expected.
+If you need lower-latency updates, the architecture will need a websocket or SSE layer instead of simply lowering the polling interval aggressively.

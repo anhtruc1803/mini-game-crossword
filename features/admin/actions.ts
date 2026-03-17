@@ -8,8 +8,11 @@ import { toErrorMessage, isRedirectError } from "@/lib/security/errors";
 import { getClientIp } from "@/lib/security/request";
 import { assertRateLimit } from "@/lib/security/rate-limit";
 import { requireAdmin } from "@/features/admin/permissions";
+import { STORAGE_BUCKETS, programImagePath } from "@/features/assets/paths";
+import { deleteImage, uploadImage } from "@/features/assets/upload";
 import { getRowById } from "@/features/games/queries";
 import * as gameService from "@/features/games/service";
+import * as programQueries from "@/features/programs/queries";
 import * as programService from "@/features/programs/service";
 import * as themeService from "@/features/themes/service";
 import type { ProgramStatus } from "@/features/programs/types";
@@ -32,6 +35,37 @@ function parseHighlightedIndexes(rawValue: FormDataEntryValue | null) {
   }
 
   return parsed as number[];
+}
+
+function getImageExtension(file: File) {
+  switch (file.type) {
+    case "image/png":
+      return "png";
+    case "image/jpeg":
+      return "jpg";
+    case "image/webp":
+      return "webp";
+    default:
+      throw new Error("Unsupported image type");
+  }
+}
+
+function getOptionalImageFile(formData: FormData, fieldName: string) {
+  const value = formData.get(fieldName);
+  if (!(value instanceof File) || value.size === 0) {
+    return null;
+  }
+
+  return value;
+}
+
+function getBucketFilePath(publicPath: string, bucket: string) {
+  const prefix = `/uploads/${bucket}/`;
+  if (!publicPath.startsWith(prefix)) {
+    return null;
+  }
+
+  return publicPath.slice(prefix.length);
 }
 
 async function withAdminMutation<T>(name: string, fn: () => Promise<T>) {
@@ -72,7 +106,41 @@ export async function createProgramAction(
         endAt: (formData.get("endAt") as string) || undefined,
       };
 
-      const program = await programService.createProgram(input);
+      let program: Awaited<ReturnType<typeof programService.createProgram>> | null = null;
+      let uploadedImagePath: string | null = null;
+
+      try {
+        program = await programService.createProgram(input);
+        const imageFile = getOptionalImageFile(formData, "imageFile");
+
+        if (imageFile) {
+          const imagePath = programImagePath(program.id, getImageExtension(imageFile));
+          uploadedImagePath = imagePath;
+
+          const imageUrl = await uploadImage(
+            imageFile,
+            STORAGE_BUCKETS.PROGRAMS,
+            imagePath
+          );
+
+          await programService.updateProgram(program.id, { imageUrl });
+        }
+      } catch (error) {
+        if (uploadedImagePath) {
+          await deleteImage(STORAGE_BUCKETS.PROGRAMS, uploadedImagePath).catch(() => undefined);
+        }
+
+        if (program) {
+          await programService.deleteProgram(program.id).catch(() => undefined);
+        }
+
+        throw error;
+      }
+
+      if (!program) {
+        return { error: "Unable to create program." };
+      }
+
       revalidatePath(ROUTES.admin.programs);
       redirect(ROUTES.admin.program(program.id));
     });
@@ -87,13 +155,54 @@ export async function updateProgramAction(
 ): Promise<ActionResult> {
   try {
     return await withAdminMutation("update-program", async () => {
-      const input = {
+      const currentProgram = await programQueries.getProgramById(id);
+      if (!currentProgram) {
+        return { error: "Program not found." };
+      }
+
+      const input: {
+        title?: string;
+        slug?: string;
+        description?: string;
+        imageUrl?: string;
+      } = {
         title: (formData.get("title") as string) || undefined,
         slug: (formData.get("slug") as string) || undefined,
         description: (formData.get("description") as string) || undefined,
       };
 
-      await programService.updateProgram(id, input);
+      const imageFile = getOptionalImageFile(formData, "imageFile");
+      const currentImagePath = currentProgram.imageUrl
+        ? getBucketFilePath(currentProgram.imageUrl, STORAGE_BUCKETS.PROGRAMS)
+        : null;
+      const nextImagePath = imageFile
+        ? programImagePath(id, getImageExtension(imageFile))
+        : null;
+
+      try {
+        if (imageFile && nextImagePath) {
+          input.imageUrl = await uploadImage(
+            imageFile,
+            STORAGE_BUCKETS.PROGRAMS,
+            nextImagePath
+          );
+        }
+
+        await programService.updateProgram(id, input);
+      } catch (error) {
+        if (nextImagePath && nextImagePath !== currentImagePath) {
+          await deleteImage(STORAGE_BUCKETS.PROGRAMS, nextImagePath).catch(() => undefined);
+        }
+
+        throw error;
+      }
+
+      if (imageFile && currentProgram.imageUrl && currentProgram.imageUrl !== input.imageUrl) {
+        if (currentImagePath) {
+          await deleteImage(STORAGE_BUCKETS.PROGRAMS, currentImagePath).catch(() => undefined);
+        }
+      }
+
       revalidatePath(ROUTES.admin.program(id));
       revalidatePath(ROUTES.admin.programs);
       return { success: true };
@@ -184,6 +293,11 @@ export async function setProgramThemeAction(
 ): Promise<ActionResult> {
   try {
     return await withAdminMutation("set-program-theme", async () => {
+      const program = await programQueries.getProgramById(programId);
+      if (!program) {
+        return { error: "Program not found." };
+      }
+
       await programService.setProgramTheme(programId, themeId);
       revalidatePath(ROUTES.admin.program(programId));
       revalidatePath(ROUTES.admin.theme(programId));

@@ -11,6 +11,7 @@ export function mapPrismaToProgram(row: PrismaProgram): Program {
     slug: row.slug,
     title: row.title,
     description: row.description,
+    imageUrl: row.imageUrl,
     status: row.status as Program["status"],
     startAt: row.startAt?.toISOString() ?? null,
     endAt: row.endAt?.toISOString() ?? null,

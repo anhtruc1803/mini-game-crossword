@@ -61,6 +61,10 @@ export const en: TranslationKeys = {
     slugHelp: "Use only lowercase letters, numbers, and hyphens. This is the public URL for viewers.",
     descriptionLabel: "Description",
     descriptionPlaceholder: "Brief description of the program...",
+    imageLabel: "Program Image",
+    imageHelp: "Upload a PNG, JPEG, or WebP image up to 5MB. This image appears in the admin list and viewer page.",
+    currentImage: "Current image",
+    imagePreviewAlt: "Program image preview",
   },
 
   programStatus: {

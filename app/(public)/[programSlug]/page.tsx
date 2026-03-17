@@ -74,6 +74,19 @@ export default async function ViewerPage({ params }: ViewerPageProps) {
               className="mx-auto mb-4 max-h-32 rounded-xl object-contain md:max-h-48"
             />
           )}
+          {program.imageUrl && (
+            <div className="mx-auto mb-4 max-w-4xl overflow-hidden rounded-2xl border border-white/10 bg-black/10 shadow-2xl">
+              <div className="relative aspect-[21/9] w-full">
+                <Image
+                  src={program.imageUrl}
+                  alt={program.title}
+                  fill
+                  className="object-cover"
+                  priority
+                />
+              </div>
+            </div>
+          )}
           <h1 className="text-2xl font-bold md:text-4xl">{program.title}</h1>
           {program.description && (
             <p className="mt-1 text-sm text-[var(--muted-foreground)] md:text-base">

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import Image from "next/image";
+import { useEffect, useState } from "react";
 import { createProgramAction, updateProgramAction } from "@/features/admin/actions";
 import type { Program } from "@/features/programs/types";
 import { useTranslation } from "@/lib/i18n";
@@ -13,7 +14,28 @@ export function ProgramForm({ program }: ProgramFormProps) {
   const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const isEditing = !!program;
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
+  function handleImageChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    setPreviewUrl((currentValue) => {
+      if (currentValue?.startsWith("blob:")) {
+        URL.revokeObjectURL(currentValue);
+      }
+
+      return file ? URL.createObjectURL(file) : null;
+    });
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -80,6 +102,39 @@ export function ProgramForm({ program }: ProgramFormProps) {
           className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)] outline-none focus:ring-2 focus:ring-[var(--ring)]"
           placeholder={t.programForm.descriptionPlaceholder}
         />
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <label className="mb-1 block text-sm font-medium">{t.programForm.imageLabel}</label>
+          <input
+            type="file"
+            name="imageFile"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={handleImageChange}
+            className="block w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-sm text-[var(--foreground)] file:mr-3 file:rounded-md file:border-0 file:bg-[var(--primary)] file:px-3 file:py-2 file:text-sm file:font-medium file:text-white"
+          />
+          <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+            {t.programForm.imageHelp}
+          </p>
+        </div>
+
+        {(previewUrl || program?.imageUrl) && (
+          <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)]">
+            <div className="border-b border-[var(--border)] px-4 py-2 text-sm text-[var(--muted-foreground)]">
+              <span>{t.programForm.currentImage}</span>
+            </div>
+            <div className="relative aspect-[16/9] w-full bg-[var(--muted)]">
+              <Image
+                src={previewUrl ?? program!.imageUrl!}
+                alt={t.programForm.imagePreviewAlt}
+                fill
+                className="object-cover"
+                unoptimized={previewUrl?.startsWith("blob:")}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <button

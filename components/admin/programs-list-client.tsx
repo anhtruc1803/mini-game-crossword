@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { ROUTES } from "@/lib/constants/routes";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -48,24 +49,36 @@ export function ProgramsListClient({ programs }: { programs: Program[] }) {
               <Link
                 key={program.id}
                 href={ROUTES.admin.program(program.id)}
-                className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5 transition hover:border-[var(--primary)]"
+                className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] transition hover:border-[var(--primary)]"
               >
-                <div className="mb-2 flex items-center justify-between">
-                  <h3 className="font-semibold">{program.title}</h3>
-                  <span
-                    className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium text-white ${status.color}`}
-                  >
-                    {status.label}
-                  </span>
-                </div>
-                <p className="text-sm text-[var(--muted-foreground)]">
-                  /{program.slug}
-                </p>
-                {program.description && (
-                  <p className="mt-2 line-clamp-2 text-sm text-[var(--muted-foreground)]">
-                    {program.description}
-                  </p>
+                {program.imageUrl && (
+                  <div className="relative aspect-[16/9] w-full bg-[var(--muted)]">
+                    <Image
+                      src={program.imageUrl}
+                      alt={program.title}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
                 )}
+                <div className="p-5">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <h3 className="font-semibold">{program.title}</h3>
+                    <span
+                      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium text-white ${status.color}`}
+                    >
+                      {status.label}
+                    </span>
+                  </div>
+                  <p className="text-sm text-[var(--muted-foreground)]">
+                    /{program.slug}
+                  </p>
+                  {program.description && (
+                    <p className="mt-2 line-clamp-2 text-sm text-[var(--muted-foreground)]">
+                      {program.description}
+                    </p>
+                  )}
+                </div>
               </Link>
             );
           })}

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { ROUTES } from "@/lib/constants/routes";
 import { SectionCard } from "@/components/shared/section-card";
@@ -30,6 +31,19 @@ export function ProgramDetailClient({ program, game }: ProgramDetailClientProps)
         </Link>
         <h2 className="text-xl font-bold">{program.title}</h2>
       </div>
+
+      {program.imageUrl && (
+        <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)]">
+          <div className="relative aspect-[21/9] w-full bg-[var(--muted)]">
+            <Image
+              src={program.imageUrl}
+              alt={program.title}
+              fill
+              className="object-cover"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Navigation tabs */}
       <div className="flex gap-2 border-b border-[var(--border)] pb-2">

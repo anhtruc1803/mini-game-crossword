@@ -7,6 +7,7 @@ export interface Program {
   slug: string;
   title: string;
   description: string | null;
+  imageUrl: string | null;
   status: ProgramStatus;
   startAt: string | null;
   endAt: string | null;

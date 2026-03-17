@@ -3,12 +3,21 @@ import { z } from "zod";
 export const PROGRAM_STATUSES = ["draft", "live", "ended"] as const;
 
 const isoDatetimeSchema = z.string().datetime();
+const programImageSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(500)
+  .refine((value) => value.startsWith("/uploads/programs/"), {
+    message: "Program image must come from the local uploads path",
+  });
 
 export const createProgramSchema = z
   .object({
     title: z.string().trim().min(1).max(200),
     slug: z.string().trim().min(1).max(100).regex(/^[a-z0-9-]+$/),
     description: z.string().trim().max(1000).optional(),
+    imageUrl: programImageSchema.optional(),
     startAt: isoDatetimeSchema.optional(),
     endAt: isoDatetimeSchema.optional(),
   })
@@ -27,6 +36,7 @@ export const updateProgramSchema = z
     title: z.string().trim().min(1).max(200).optional(),
     slug: z.string().trim().min(1).max(100).regex(/^[a-z0-9-]+$/).optional(),
     description: z.string().trim().max(1000).optional(),
+    imageUrl: programImageSchema.nullable().optional(),
     startAt: isoDatetimeSchema.optional(),
     endAt: isoDatetimeSchema.optional(),
   })
