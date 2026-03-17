@@ -9,6 +9,13 @@ interface CrosswordBoardProps {
   activeRowIndex: number | null;
 }
 
+function getBoardCellSize(maxLength: number) {
+  if (maxLength >= 20) return 34;
+  if (maxLength >= 16) return 38;
+  if (maxLength >= 13) return 42;
+  return 48;
+}
+
 export function CrosswordBoard({ rows, activeRowIndex }: CrosswordBoardProps) {
   const { t } = useTranslation();
 
@@ -23,6 +30,9 @@ export function CrosswordBoard({ rows, activeRowIndex }: CrosswordBoardProps) {
   }
 
   const maxLength = Math.max(...rows.map((row) => row.answerLength));
+  const cellSize = getBoardCellSize(maxLength);
+  const cellGap = cellSize >= 48 ? 8 : 6;
+  const boardMinWidth = (maxLength + 1) * cellSize + maxLength * cellGap + 64;
 
   return (
     <section className="glass-panel rounded-[28px] p-4 sm:p-6">
@@ -36,8 +46,12 @@ export function CrosswordBoard({ rows, activeRowIndex }: CrosswordBoardProps) {
         <p className="text-sm text-white/56">{t.viewer.boardSubtitle}</p>
       </div>
 
-      <div className="broadcast-grid overflow-hidden rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(6,12,24,0.84),rgba(9,18,34,0.62))] px-3 py-4 sm:px-4 sm:py-5">
-        <div className="space-y-2.5 sm:space-y-3">
+      <div className="rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(6,12,24,0.84),rgba(9,18,34,0.62))]">
+        <div className="overflow-x-auto overflow-y-hidden rounded-[26px] px-3 py-4 sm:px-4 sm:py-5">
+          <div
+            className="broadcast-grid space-y-2.5 rounded-[22px] sm:space-y-3"
+            style={{ minWidth: `${boardMinWidth}px` }}
+          >
           {rows.map((row, i) => (
             <CrosswordRowView
               key={row.id}
@@ -45,8 +59,11 @@ export function CrosswordBoard({ rows, activeRowIndex }: CrosswordBoardProps) {
               rowIndex={i}
               isActive={i === activeRowIndex}
               maxLength={maxLength}
+              cellSize={cellSize}
+              cellGap={cellGap}
             />
           ))}
+          </div>
         </div>
       </div>
     </section>

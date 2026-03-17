@@ -34,10 +34,12 @@ export const ROW_STATUS_TRANSITIONS: Record<string, string[]> = {
 export const EVENT_TYPES = {
   GAME_STARTED: "game_started",
   GAME_PAUSED: "game_paused",
+  GAME_RESUMED: "game_resumed",
   GAME_ENDED: "game_ended",
   GAME_RESET: "game_reset",
   CLUE_OPENED: "clue_opened",
   ANSWER_REVEALED: "answer_revealed",
   ANNOUNCEMENT_UPDATED: "announcement_updated",
   ROW_ADVANCED: "row_advanced",
+  ROW_REWOUND: "row_rewound",
 } as const;

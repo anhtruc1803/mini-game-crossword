@@ -102,7 +102,7 @@ export async function startGame(gameId: string): Promise<Game> {
   await updateGameCurrentRow(gameId, 0);
 
   const updated = await updateGameStatus(gameId, GAME_STATUS.LIVE as GameStatus);
-  await insertGameEvent(gameId, EVENT_TYPES.GAME_STARTED, "Game da bat dau");
+  await insertGameEvent(gameId, EVENT_TYPES.GAME_STARTED, "Game đã bắt đầu");
   return updated;
 }
 
@@ -111,7 +111,7 @@ export async function pauseGame(gameId: string): Promise<Game> {
   assertGameTransition(game.gameStatus, GAME_STATUS.PAUSED);
 
   const updated = await updateGameStatus(gameId, GAME_STATUS.PAUSED as GameStatus);
-  await insertGameEvent(gameId, EVENT_TYPES.GAME_PAUSED, "Game tam dung");
+  await insertGameEvent(gameId, EVENT_TYPES.GAME_PAUSED, "Game tạm dừng");
   return updated;
 }
 
@@ -120,7 +120,7 @@ export async function resumeGame(gameId: string): Promise<Game> {
   assertGameTransition(game.gameStatus, GAME_STATUS.LIVE);
 
   const updated = await updateGameStatus(gameId, GAME_STATUS.LIVE as GameStatus);
-  await insertGameEvent(gameId, EVENT_TYPES.GAME_STARTED, "Game tiep tuc");
+  await insertGameEvent(gameId, EVENT_TYPES.GAME_RESUMED, "Game tiếp tục");
   return updated;
 }
 
@@ -129,7 +129,7 @@ export async function endGame(gameId: string): Promise<Game> {
   assertGameTransition(game.gameStatus, GAME_STATUS.ENDED);
 
   const updated = await updateGameStatus(gameId, GAME_STATUS.ENDED as GameStatus);
-  await insertGameEvent(gameId, EVENT_TYPES.GAME_ENDED, "Game da ket thuc");
+  await insertGameEvent(gameId, EVENT_TYPES.GAME_ENDED, "Game đã kết thúc");
   return updated;
 }
 
@@ -142,7 +142,7 @@ export async function resetGame(gameId: string): Promise<Game> {
   await updateGameAnnouncement(gameId, null);
 
   const updated = await updateGameStatus(gameId, GAME_STATUS.DRAFT as GameStatus);
-  await insertGameEvent(gameId, EVENT_TYPES.GAME_RESET, "Game da duoc reset");
+  await insertGameEvent(gameId, EVENT_TYPES.GAME_RESET, "Game đã được reset");
   return updated;
 }
 
@@ -169,7 +169,7 @@ export async function revealClue(gameId: string): Promise<CrosswordRow> {
   await insertGameEvent(
     gameId,
     EVENT_TYPES.CLUE_OPENED,
-    `Cau ${currentRow.rowOrder + 1} da mo`,
+    `Câu ${currentRow.rowOrder + 1} đã mở`,
     { rowId: currentRow.id, rowOrder: currentRow.rowOrder }
   );
   return updated;
@@ -189,8 +189,8 @@ export async function revealAnswer(gameId: string): Promise<CrosswordRow> {
   await insertGameEvent(
     gameId,
     EVENT_TYPES.ANSWER_REVEALED,
-    `Dap an cau ${currentRow.rowOrder + 1}: ${currentRow.answerText}`,
-    { rowId: currentRow.id, answer: currentRow.answerText }
+    `Đáp án câu ${currentRow.rowOrder + 1}: ${currentRow.answerText}`,
+    { rowId: currentRow.id, rowOrder: currentRow.rowOrder, answer: currentRow.answerText }
   );
   return updated;
 }
@@ -210,8 +210,39 @@ export async function advanceToNextRow(gameId: string): Promise<Game> {
   await insertGameEvent(
     gameId,
     EVENT_TYPES.ROW_ADVANCED,
-    `Chuyen sang cau ${nextIndex + 1}`,
+    `Chuyển sang câu ${nextIndex + 1}`,
     { rowIndex: nextIndex }
+  );
+  return updated;
+}
+
+export async function rewindToPreviousRow(gameId: string): Promise<Game> {
+  const game = await requireGame(gameId);
+  if (
+    game.gameStatus !== GAME_STATUS.LIVE &&
+    game.gameStatus !== GAME_STATUS.PAUSED
+  ) {
+    throw new AppError("Game must be live or paused to go back a row");
+  }
+
+  const currentIndex = game.currentRowIndex ?? 0;
+  if (currentIndex <= 0) {
+    throw new AppError("Already at the first row");
+  }
+
+  const rows = await getGameRows(gameId);
+  const currentRow = getCurrentRow(rows, game.currentRowIndex);
+  if (currentRow.rowStatus !== ROW_STATUS.HIDDEN) {
+    throw new AppError("Only unopened next questions can be rewound");
+  }
+
+  const previousIndex = currentIndex - 1;
+  const updated = await updateGameCurrentRow(gameId, previousIndex);
+  await insertGameEvent(
+    gameId,
+    EVENT_TYPES.ROW_REWOUND,
+    `Quay lại câu ${previousIndex + 1}`,
+    { rowIndex: previousIndex }
   );
   return updated;
 }
@@ -233,7 +264,8 @@ export async function updateAnnouncementText(
   await insertGameEvent(
     gameId,
     EVENT_TYPES.ANNOUNCEMENT_UPDATED,
-    normalizedText ? `Thong bao: ${normalizedText}` : "Da xoa thong bao"
+    normalizedText ? `Thông báo: ${normalizedText}` : "Đã xóa thông báo",
+    normalizedText ? { text: normalizedText } : { text: null }
   );
   return updated;
 }

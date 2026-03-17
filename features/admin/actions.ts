@@ -502,6 +502,21 @@ export async function advanceRowAction(
   }
 }
 
+export async function previousRowAction(
+  gameId: string,
+  programId: string
+): Promise<ActionResult> {
+  try {
+    return await withAdminMutation("previous-row", async () => {
+      await gameService.rewindToPreviousRow(gameId);
+      revalidateGamePages(programId);
+      return { success: true };
+    });
+  } catch (error) {
+    return actionError(error, "Unable to go back to the previous row.");
+  }
+}
+
 export async function updateAnnouncementAction(
   gameId: string,
   programId: string,

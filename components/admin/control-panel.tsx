@@ -6,6 +6,7 @@ import {
   advanceRowAction,
   endGameAction,
   pauseGameAction,
+  previousRowAction,
   resetGameAction,
   resumeGameAction,
   revealAnswerAction,
@@ -30,11 +31,15 @@ export function ControlPanel({ programId, game, rows }: ControlPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState(game.announcementText ?? "");
 
-  const currentRow = game.currentRowIndex !== null ? rows[game.currentRowIndex] : null;
   const isLive = game.gameStatus === GAME_STATUS.LIVE;
   const isPaused = game.gameStatus === GAME_STATUS.PAUSED;
   const isDraft = game.gameStatus === GAME_STATUS.DRAFT;
   const isEnded = game.gameStatus === GAME_STATUS.ENDED;
+  const currentRow = game.currentRowIndex !== null ? rows[game.currentRowIndex] : null;
+  const canRewind =
+    (isLive || isPaused) &&
+    (game.currentRowIndex ?? 0) > 0 &&
+    currentRow?.rowStatus === ROW_STATUS.HIDDEN;
 
   async function exec(action: () => Promise<{ error?: string; success?: boolean }>) {
     setLoading(true);
@@ -119,6 +124,13 @@ export function ControlPanel({ programId, game, rows }: ControlPanelProps) {
               {t.game.nextQuestion}
             </button>
             <button
+              onClick={() => exec(() => previousRowAction(game.id, programId))}
+              disabled={loading || !canRewind}
+              className="rounded-lg bg-slate-600 px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+            >
+              {t.game.previousQuestion}
+            </button>
+            <button
               onClick={() => exec(() => pauseGameAction(game.id, programId))}
               disabled={loading}
               className="rounded-lg bg-yellow-600 px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
@@ -137,6 +149,13 @@ export function ControlPanel({ programId, game, rows }: ControlPanelProps) {
 
         {isPaused && (
           <>
+            <button
+              onClick={() => exec(() => previousRowAction(game.id, programId))}
+              disabled={loading || !canRewind}
+              className="rounded-lg bg-slate-600 px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+            >
+              {t.game.previousQuestion}
+            </button>
             <button
               onClick={() => exec(() => resumeGameAction(game.id, programId))}
               disabled={loading}

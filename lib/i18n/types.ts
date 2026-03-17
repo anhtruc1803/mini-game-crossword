@@ -114,6 +114,7 @@ export type TranslationKeys = {
     openQuestion: string;
     showAnswer: string;
     nextQuestion: string;
+    previousQuestion: string;
     pause: string;
     endGame: string;
     resume: string;
@@ -122,6 +123,16 @@ export type TranslationKeys = {
     announcementPlaceholder: string;
     questionsOverview: string;
     opened: string;
+    eventGameStarted: string;
+    eventGamePaused: string;
+    eventGameResumed: string;
+    eventGameEnded: string;
+    eventGameReset: string;
+    eventClueOpened: string;
+    eventAnswerRevealed: string;
+    eventRowAdvanced: string;
+    eventRowRewound: string;
+    announcementRemoved: string;
   };
 
   // Admin: Rows
