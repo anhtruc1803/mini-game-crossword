@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils/cn";
 
 const balloons = [
@@ -16,7 +17,72 @@ const sparkles = [
   { left: "90%", top: "48%", delay: "0.3s", duration: "3.9s" },
 ];
 
+type ConfettiPiece = {
+  id: string;
+  left: string;
+  delay: string;
+  duration: string;
+  rotate: string;
+  color: string;
+  size: number;
+};
+
+const confettiPalette = [
+  "bg-pink-300/90",
+  "bg-amber-300/90",
+  "bg-sky-300/90",
+  "bg-emerald-300/90",
+  "bg-rose-300/90",
+  "bg-fuchsia-300/90",
+];
+
+function randomBetween(min: number, max: number) {
+  return Math.random() * (max - min) + min;
+}
+
+function createBurst() {
+  const burstId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  return Array.from({ length: 18 }, (_, index) => ({
+    id: `${burstId}-${index}`,
+    left: `${randomBetween(8, 92)}%`,
+    delay: `${randomBetween(0, 0.65).toFixed(2)}s`,
+    duration: `${randomBetween(4.8, 6.4).toFixed(2)}s`,
+    rotate: `${randomBetween(-40, 40).toFixed(0)}deg`,
+    color: confettiPalette[index % confettiPalette.length],
+    size: Math.round(randomBetween(8, 14)),
+  }));
+}
+
 export function BirthdayEffects({ enabled }: { enabled: boolean }) {
+  const [confettiBursts, setConfettiBursts] = useState<ConfettiPiece[]>([]);
+
+  useEffect(() => {
+    if (!enabled) return;
+
+    let burstTimeout: ReturnType<typeof setTimeout> | null = null;
+    let cleanupTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    function scheduleBurst() {
+      const burst = createBurst();
+      setConfettiBursts(burst);
+
+      if (cleanupTimeout) clearTimeout(cleanupTimeout);
+      cleanupTimeout = setTimeout(() => {
+        setConfettiBursts([]);
+      }, 7200);
+
+      burstTimeout = setTimeout(scheduleBurst, randomBetween(20000, 30000));
+    }
+
+    burstTimeout = setTimeout(scheduleBurst, randomBetween(12000, 18000));
+
+    return () => {
+      if (burstTimeout) clearTimeout(burstTimeout);
+      if (cleanupTimeout) clearTimeout(cleanupTimeout);
+    };
+  }, [enabled]);
+
   if (!enabled) return null;
 
   return (
@@ -53,6 +119,21 @@ export function BirthdayEffects({ enabled }: { enabled: boolean }) {
             top: sparkle.top,
             animationDelay: sparkle.delay,
             animationDuration: sparkle.duration,
+          }}
+        />
+      ))}
+
+      {confettiBursts.map((piece) => (
+        <span
+          key={piece.id}
+          className={cn("birthday-confetti absolute top-[-10%] block rounded-sm", piece.color)}
+          style={{
+            left: piece.left,
+            width: `${piece.size}px`,
+            height: `${Math.round(piece.size * 1.7)}px`,
+            animationDelay: piece.delay,
+            animationDuration: piece.duration,
+            transform: `rotate(${piece.rotate})`,
           }}
         />
       ))}

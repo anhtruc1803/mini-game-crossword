@@ -5,6 +5,7 @@ import { ResilientImage } from "@/components/shared/resilient-image";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { ViewerFooter } from "@/components/shared/viewer-footer";
 import { BirthdayEffects } from "@/components/viewer/birthday-effects";
+import { CursorAura } from "@/components/viewer/cursor-aura";
 import { ViewerRealtimeWrapper } from "@/components/viewer/viewer-realtime-wrapper";
 import { getViewerSnapshot } from "@/features/viewer/queries";
 import { vi } from "@/lib/i18n/locales/vi";
@@ -36,6 +37,7 @@ export default async function ViewerPage({ params }: ViewerPageProps) {
 
   return (
     <main className="relative min-h-screen overflow-hidden" style={themeStyle}>
+      <CursorAura />
       <BirthdayEffects enabled={isBirthdayProgram} />
 
       {theme?.desktopBgUrl && (

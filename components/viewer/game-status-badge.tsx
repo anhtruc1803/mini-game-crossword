@@ -8,7 +8,7 @@ const BADGE_STYLES: Record<string, string> = {
   [GAME_STATUS.DRAFT]:
     "border-white/12 bg-white/8 text-white/74",
   [GAME_STATUS.LIVE]:
-    "border-emerald-400/24 bg-emerald-400/14 text-emerald-200 shadow-[0_0_28px_rgba(16,185,129,0.18)]",
+    "live-pill border-emerald-400/24 bg-emerald-400/14 text-emerald-200 shadow-[0_0_28px_rgba(16,185,129,0.18)]",
   [GAME_STATUS.PAUSED]:
     "border-amber-400/24 bg-amber-400/14 text-amber-100 shadow-[0_0_24px_rgba(245,158,11,0.15)]",
   [GAME_STATUS.ENDED]:
@@ -45,7 +45,7 @@ export function GameStatusBadge({ status, className }: GameStatusBadgeProps) {
         className={cn(
           "mr-2 h-2.5 w-2.5 rounded-full",
           status === GAME_STATUS.LIVE
-            ? "bg-emerald-300 shadow-[0_0_16px_rgba(110,231,183,0.75)]"
+            ? "live-dot bg-emerald-300 shadow-[0_0_16px_rgba(110,231,183,0.75)]"
             : status === GAME_STATUS.PAUSED
               ? "bg-amber-300"
               : status === GAME_STATUS.ENDED
