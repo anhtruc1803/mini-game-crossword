@@ -42,8 +42,8 @@ export function ViewerRealtimeWrapper({
   return (
     <div className="space-y-6">
       <section className="glass-panel rounded-[28px] p-5 sm:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-2">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-3">
               <GameStatusBadge status={gameStatus} />
               {activeQuestionNumber !== null && (
@@ -63,13 +63,13 @@ export function ViewerRealtimeWrapper({
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="glass-panel-soft rounded-3xl px-4 py-3">
+            <div className="glass-panel-soft soft-hover rounded-3xl px-4 py-3">
               <p className="text-xs uppercase tracking-[0.22em] text-white/45">
                 {t.viewer.questions}
               </p>
               <p className="mt-2 text-3xl font-bold text-white">{rows.length}</p>
             </div>
-            <div className="glass-panel-soft rounded-3xl px-4 py-3">
+            <div className="glass-panel-soft soft-hover rounded-3xl px-4 py-3">
               <p className="text-xs uppercase tracking-[0.22em] text-white/45">
                 {t.viewer.updates}
               </p>
@@ -79,23 +79,22 @@ export function ViewerRealtimeWrapper({
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)_340px]">
-        <div className="space-y-6 xl:order-1">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_340px]">
+        <div className="glass-panel rounded-[30px] p-4 sm:p-5">
           <ClueList rows={rows} activeRowIndex={activeRowIndex} />
+          <div className="mt-5">
+            <CrosswordBoard rows={rows} activeRowIndex={activeRowIndex} />
+          </div>
+          <div className="mt-5">
+            <FinalKeywordHint
+              hints={finalKeywordHint}
+              finalKeyword={finalKeyword}
+              gameEnded={gameEnded}
+            />
+          </div>
         </div>
 
-        <div className="space-y-6 xl:order-2">
-          <CrosswordBoard rows={rows} activeRowIndex={activeRowIndex} />
-          <FinalKeywordHint
-            hints={finalKeywordHint}
-            finalKeyword={finalKeyword}
-            gameEnded={gameEnded}
-          />
-        </div>
-
-        <div className="space-y-6 xl:order-3">
-          <AnnouncementPanel announcementText={game.announcementText} events={events} />
-        </div>
+        <AnnouncementPanel announcementText={game.announcementText} events={events} />
       </div>
     </div>
   );

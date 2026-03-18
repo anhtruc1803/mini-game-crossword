@@ -21,29 +21,24 @@ export function FinalKeywordHint({
   const allRevealed = hints.every((hint) => hint !== null);
 
   return (
-    <section className="glass-panel rounded-[28px] p-5 sm:p-6">
-      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.24em] text-white/42">
-            {t.viewer.keyword}
-          </p>
-          <h3 className="mt-2 whitespace-nowrap text-2xl font-semibold text-white">
-            {t.viewer.keyword}
-          </h3>
-        </div>
-        <p className="text-sm text-white/56">
-          {gameEnded && allRevealed ? t.viewer.finalKeywordReady : t.viewer.boardSubtitle}
-        </p>
-      </div>
+    <section className="rounded-[26px] border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+      <span className="glass-pill inline-flex rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-white/78">
+        {t.viewer.keyword}
+      </span>
 
-      <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+      <h3 className="mt-3 text-2xl font-semibold text-white">{t.viewer.keyword}</h3>
+      <p className="mt-2 text-sm leading-6 text-white/56">
+        {gameEnded && allRevealed ? t.viewer.finalKeywordReady : t.viewer.boardSubtitle}
+      </p>
+
+      <div className="mt-5 flex flex-wrap gap-3">
         {hints.map((hint, i) => (
           <div
             key={i}
             className={cn(
-              "glass-panel-soft flex h-12 w-12 items-center justify-center rounded-2xl text-lg font-bold uppercase sm:h-14 sm:w-14 sm:text-xl",
+              "glass-panel-soft flex h-14 w-14 items-center justify-center rounded-[18px] text-xl font-bold uppercase",
               hint !== null
-                ? "border-[var(--accent)]/45 bg-[var(--accent)]/18 text-[var(--accent)] shadow-[0_0_24px_rgba(245,158,11,0.18)]"
+                ? "border-[var(--accent)]/50 bg-[var(--accent)]/18 text-amber-50 shadow-[0_10px_22px_rgba(245,158,11,0.14)]"
                 : "text-white/36"
             )}
           >
@@ -53,7 +48,7 @@ export function FinalKeywordHint({
       </div>
 
       {gameEnded && allRevealed && finalKeyword && (
-        <div className="mt-5 rounded-[24px] border border-[var(--primary)]/22 bg-[var(--primary)]/10 px-5 py-4 text-center shadow-[0_20px_40px_rgba(6,12,24,0.24)]">
+        <div className="mt-5 rounded-[22px] border border-[var(--primary)]/22 bg-[var(--primary)]/10 px-5 py-4">
           <p className="text-xs uppercase tracking-[0.28em] text-white/54">
             {t.viewer.finalKeywordReady}
           </p>

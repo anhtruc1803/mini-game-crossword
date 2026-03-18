@@ -27,8 +27,8 @@ export function CrosswordRowView({
   return (
     <div
       className={cn(
-        "rounded-[24px] px-2 py-2 transition-all duration-300 sm:px-3",
-        isActive && "bg-white/6 shadow-[0_0_0_1px_rgba(94,234,212,0.18),0_16px_40px_rgba(8,15,29,0.28)]"
+        "rounded-[22px] px-2 py-2 transition-all duration-200 sm:px-3",
+        isActive && "bg-[var(--primary)]/[0.08] shadow-[0_0_0_1px_rgba(45,140,240,0.16)]"
       )}
     >
       <div className="flex min-w-max items-center gap-3">
@@ -36,10 +36,8 @@ export function CrosswordRowView({
           className={cn(
             "flex shrink-0 items-center justify-center rounded-2xl text-sm font-bold",
             isActive
-              ? "bg-[var(--primary)] text-slate-950 shadow-[0_0_30px_rgba(94,234,212,0.36)]"
-              : isRevealed
-                ? "bg-emerald-400/18 text-emerald-300"
-                : "bg-white/6 text-white/72"
+              ? "bg-[var(--primary)] text-white shadow-[0_0_24px_rgba(45,140,240,0.34)]"
+              : "bg-white/8 text-white/78"
           )}
           style={{ width: `${cellSize}px`, height: `${cellSize}px` }}
         >
@@ -59,26 +57,27 @@ export function CrosswordRowView({
           {Array.from({ length: row.answerLength }).map((_, i) => {
             const char = row.answerText?.[i] ?? "";
             const isHighlighted = row.highlightedIndexes.includes(i);
-            const hiddenMarker = isClueVisible ? "•" : "·";
 
             return (
               <div
                 key={i}
                 className={cn(
-                  "flex items-center justify-center rounded-2xl border text-sm font-bold uppercase transition-all duration-300 sm:text-base",
-                  isHidden && "border-white/10 bg-white/7 text-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]",
-                  isClueVisible && "border-white/16 bg-white/9 text-white/35",
+                  "flex items-center justify-center rounded-2xl border text-sm font-bold uppercase transition-all duration-200 sm:text-base",
+                  isHidden &&
+                    "border border-dashed border-white/18 bg-white/[0.018] text-white/42",
+                  isClueVisible &&
+                    "border border-dashed border-white/18 bg-white/[0.02] text-white/42",
                   isRevealed &&
                     !isHighlighted &&
-                    "border-white/14 bg-white/12 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
+                    "border-[rgba(45,140,240,0.65)] bg-[rgba(45,140,240,0.28)] text-white shadow-[0_0_20px_rgba(45,140,240,0.16)]",
                   isRevealed &&
                     isHighlighted &&
-                    "border-[var(--accent)]/45 bg-[var(--accent)]/18 text-[var(--accent)] shadow-[0_0_20px_rgba(245,158,11,0.2)]",
-                  isActive && !isRevealed && "border-[var(--primary)]/18 bg-[var(--primary)]/8"
+                    "border-[rgba(251,191,36,0.72)] bg-[rgba(251,191,36,0.24)] text-amber-50 shadow-[0_0_20px_rgba(251,191,36,0.12)]",
+                  isActive && !isRevealed && "border-white/22 bg-white/[0.035]"
                 )}
                 style={{ width: `${cellSize}px`, height: `${cellSize}px` }}
               >
-                {isRevealed ? char : hiddenMarker}
+                {isRevealed ? char : "·"}
               </div>
             );
           })}

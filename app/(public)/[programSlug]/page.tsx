@@ -1,12 +1,12 @@
+import Image from "next/image";
 import { notFound } from "next/navigation";
-import { getViewerSnapshot } from "@/features/viewer/queries";
-import { ViewerRealtimeWrapper } from "@/components/viewer/viewer-realtime-wrapper";
-import { ViewerFooter } from "@/components/shared/viewer-footer";
 import { LanguageSwitcher } from "@/components/shared/language-switcher";
 import { ResilientImage } from "@/components/shared/resilient-image";
-import { vi } from "@/lib/i18n/locales/vi";
+import { ViewerFooter } from "@/components/shared/viewer-footer";
 import { BirthdayEffects } from "@/components/viewer/birthday-effects";
-import { PointerGlow } from "@/components/viewer/pointer-glow";
+import { ViewerRealtimeWrapper } from "@/components/viewer/viewer-realtime-wrapper";
+import { getViewerSnapshot } from "@/features/viewer/queries";
+import { vi } from "@/lib/i18n/locales/vi";
 
 interface ViewerPageProps {
   params: Promise<{ programSlug: string }>;
@@ -21,10 +21,9 @@ export default async function ViewerPage({ params }: ViewerPageProps) {
 
   const { program, theme } = snapshot;
   const birthdaySignal = `${program.title} ${program.slug} ${program.description ?? ""}`.toLowerCase();
+  const normalizedBirthdaySignal = birthdaySignal.normalize("NFD").replace(/\p{Diacritic}/gu, "");
   const isBirthdayProgram =
-    birthdaySignal.includes("sinh nhật") ||
-    birthdaySignal.includes("sinh nhat") ||
-    birthdaySignal.includes("birthday");
+    normalizedBirthdaySignal.includes("sinh nhat") || birthdaySignal.includes("birthday");
 
   const themeStyle: React.CSSProperties = theme
     ? ({
@@ -36,8 +35,8 @@ export default async function ViewerPage({ params }: ViewerPageProps) {
 
   return (
     <main className="relative min-h-screen overflow-hidden" style={themeStyle}>
-      <PointerGlow />
       <BirthdayEffects enabled={isBirthdayProgram} />
+
       {theme?.desktopBgUrl && (
         <div
           className="fixed inset-0 hidden bg-cover bg-center bg-no-repeat opacity-35 md:block"
@@ -51,14 +50,15 @@ export default async function ViewerPage({ params }: ViewerPageProps) {
         />
       )}
 
-      <div className="fixed inset-0 bg-[linear-gradient(180deg,rgba(7,17,31,0.68),rgba(7,17,31,0.88))]" />
-      <div className="pointer-events-none fixed inset-0 broadcast-grid opacity-[0.08]" />
-      <div className="pointer-events-none fixed -left-32 top-12 h-80 w-80 rounded-full bg-[var(--primary)]/20 blur-3xl" />
-      <div className="pointer-events-none fixed right-0 top-0 h-96 w-96 rounded-full bg-[var(--secondary)]/20 blur-3xl" />
+      <div className="fixed inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.62),rgba(11,18,32,0.9))]" />
+      <div className="pointer-events-none fixed inset-0 grid-paper opacity-[0.05]" />
+      <div className="pointer-events-none fixed -left-32 top-12 h-80 w-80 rounded-full bg-[var(--celebration)]/18 blur-3xl" />
+      <div className="pointer-events-none fixed right-0 top-0 h-96 w-96 rounded-full bg-[var(--accent)]/12 blur-3xl" />
+      <div className="pointer-events-none fixed right-[12%] top-[20%] h-72 w-72 rounded-full bg-[var(--secondary)]/14 blur-3xl" />
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
         <header className="glass-panel relative mb-8 overflow-hidden rounded-[32px] p-5 sm:p-6 lg:p-8">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.12),transparent_30%),linear-gradient(135deg,rgba(255,255,255,0.06),transparent_55%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.12),transparent_28%),linear-gradient(135deg,rgba(251,191,36,0.06),transparent_55%)]" />
 
           <div className="relative flex justify-end">
             <LanguageSwitcher />
@@ -70,17 +70,16 @@ export default async function ViewerPage({ params }: ViewerPageProps) {
                 <span className="glass-pill inline-flex rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-white/80">
                   {t.common.appName}
                 </span>
-                {theme?.logoUrl && (
-                  <div className="glass-pill h-12 w-28 overflow-hidden rounded-2xl p-2">
-                    <ResilientImage
-                      src={theme.logoUrl}
-                      alt="Logo chương trình"
-                      fallbackLabel={program.title}
-                      loading="eager"
-                      imgClassName="object-contain"
-                    />
-                  </div>
-                )}
+                <div className="inet-outline rounded-2xl px-4 py-3">
+                  <Image
+                    src="/brands/inet-logo.svg"
+                    alt="iNET"
+                    width={126}
+                    height={36}
+                    priority
+                    className="h-7 w-auto sm:h-8"
+                  />
+                </div>
               </div>
 
               <div className="space-y-3">
@@ -94,21 +93,12 @@ export default async function ViewerPage({ params }: ViewerPageProps) {
                 )}
               </div>
 
-              {theme?.bannerUrl && (
-                <div className="glass-panel-soft max-w-3xl overflow-hidden rounded-3xl p-2">
-                  <div className="h-24 overflow-hidden rounded-[20px] sm:h-28">
-                    <ResilientImage
-                      src={theme.bannerUrl}
-                      alt={`${program.title} banner`}
-                      fallbackLabel={program.title}
-                      loading="eager"
-                    />
-                  </div>
-                </div>
-              )}
+              <p className="max-w-2xl text-sm leading-7 text-white/64 sm:text-base">
+                {snapshot.game?.subtitle ?? t.viewer.boardSubtitle}
+              </p>
             </div>
 
-            <div className="glass-panel-soft overflow-hidden rounded-[28px] p-3">
+            <div className="overflow-hidden rounded-[28px] border border-[var(--accent)]/16 bg-[linear-gradient(180deg,rgba(251,191,36,0.06),rgba(251,113,133,0.04))] p-3 shadow-[0_0_0_1px_rgba(251,113,133,0.06),0_24px_50px_rgba(2,6,23,0.24)]">
               <div className="relative h-[260px] overflow-hidden rounded-[22px] sm:h-[320px] lg:h-[380px]">
                 <ResilientImage
                   src={program.imageUrl}

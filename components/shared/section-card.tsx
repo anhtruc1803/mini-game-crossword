@@ -11,7 +11,7 @@ export function SectionCard({ title, children, className }: SectionCardProps) {
   return (
     <div
       className={cn(
-        "rounded-xl border border-[var(--border)] bg-[var(--card)] p-6",
+        "glass-panel rounded-[28px] p-6",
         className
       )}
     >

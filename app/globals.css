@@ -1,15 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --primary: #5eead4;
-  --secondary: #60a5fa;
-  --accent: #f59e0b;
-  --background: #07111f;
+  --primary: #2d8cf0;
+  --secondary: #38bdf8;
+  --accent: #fbbf24;
+  --celebration: #fb7185;
+  --mint: #5eead4;
+  --background: #0f172a;
   --foreground: #f8fafc;
-  --card: #101b2f;
+  --card: rgba(15, 23, 42, 0.58);
   --card-foreground: #f1f5f9;
-  --muted: #17263e;
-  --muted-foreground: #9cb1cf;
+  --muted: #1b2942;
+  --muted-foreground: #9fb0c8;
   --border: rgba(203, 213, 225, 0.14);
   --ring: #5eead4;
 }
@@ -25,10 +27,10 @@ html {
 body {
   font-family: "Be Vietnam Pro", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   background:
-    radial-gradient(circle at top left, rgba(94, 234, 212, 0.16), transparent 28%),
-    radial-gradient(circle at 85% 12%, rgba(96, 165, 250, 0.18), transparent 24%),
-    radial-gradient(circle at 50% 100%, rgba(14, 165, 233, 0.12), transparent 30%),
-    linear-gradient(180deg, #07111f 0%, #09172a 42%, #050c17 100%);
+    radial-gradient(circle at 10% 8%, rgba(251, 113, 133, 0.18), transparent 26%),
+    radial-gradient(circle at 86% 10%, rgba(251, 191, 36, 0.14), transparent 24%),
+    radial-gradient(circle at 76% 28%, rgba(56, 189, 248, 0.16), transparent 22%),
+    linear-gradient(180deg, #0f172a 0%, #111827 44%, #0b1220 100%);
   color: var(--foreground);
   min-height: 100vh;
 }
@@ -41,7 +43,7 @@ body {
 .glass-panel {
   border: 1px solid rgba(255, 255, 255, 0.12);
   background:
-    linear-gradient(180deg, rgba(15, 23, 42, 0.76), rgba(8, 15, 29, 0.52));
+    linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.58));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 24px 60px rgba(2, 6, 23, 0.38);
@@ -51,7 +53,7 @@ body {
 
 .glass-panel-soft {
   border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(10, 18, 35, 0.46);
+  background: rgba(15, 23, 42, 0.42);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
@@ -70,6 +72,41 @@ body {
     linear-gradient(rgba(148, 163, 184, 0.09) 1px, transparent 1px),
     linear-gradient(90deg, rgba(148, 163, 184, 0.09) 1px, transparent 1px);
   background-size: 26px 26px;
+}
+
+.grid-paper {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.soft-hover {
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.soft-hover:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 16px 30px rgba(2, 6, 23, 0.18);
+}
+
+.inet-button {
+  background: linear-gradient(135deg, rgba(45, 140, 240, 0.95), rgba(255, 49, 49, 0.9));
+  box-shadow: 0 14px 26px rgba(45, 140, 240, 0.16);
+}
+
+.inet-button:hover {
+  filter: brightness(1.04);
+}
+
+.inet-outline {
+  border-color: rgba(45, 140, 240, 0.24);
+  background: linear-gradient(180deg, rgba(45, 140, 240, 0.12), rgba(255, 49, 49, 0.06));
 }
 
 @keyframes birthday-float {
