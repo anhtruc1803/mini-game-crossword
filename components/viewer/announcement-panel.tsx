@@ -9,7 +9,11 @@ interface AnnouncementPanelProps {
   events: GameEvent[];
 }
 
-function getEventLabel(eventType: string, t: ReturnType<typeof useTranslation>["t"]) {
+function getEventLabel(
+  eventType: string,
+  locale: "vi" | "en",
+  t: ReturnType<typeof useTranslation>["t"]
+) {
   const labels: Record<string, string> = {
     game_started: t.viewer.eventGameStarted,
     game_paused: t.viewer.eventGamePaused,
@@ -18,6 +22,7 @@ function getEventLabel(eventType: string, t: ReturnType<typeof useTranslation>["
     clue_opened: t.viewer.eventClueOpened,
     answer_revealed: t.viewer.eventAnswerRevealed,
     row_advanced: t.viewer.eventRowAdvanced,
+    announcement_updated: locale === "vi" ? "Đã cập nhật thông báo" : "Announcement updated",
   };
 
   return labels[eventType] ?? eventType.replaceAll("_", " ");
@@ -136,7 +141,7 @@ export function AnnouncementPanel({ announcementText, events }: AnnouncementPane
                     </span>
                   </div>
                   <p className="mt-2 text-xs uppercase tracking-[0.24em] text-white/35">
-                    {getEventLabel(event.eventType, t)}
+                    {getEventLabel(event.eventType, locale, t)}
                   </p>
                 </div>
               </div>

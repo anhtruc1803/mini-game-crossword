@@ -31,13 +31,28 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
     <button
       type="button"
       onClick={toggleTheme}
-      className={`glass-pill inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-white/85 transition hover:bg-white/12 ${className}`}
+      className={`glass-pill inline-flex items-center gap-1 rounded-full p-1 text-xs font-medium text-white/85 transition hover:bg-white/12 ${className}`}
       title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
       aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
     >
-      <span className={theme === "dark" ? "font-semibold text-white" : "text-white/55"}>Dark</span>
-      <span className="opacity-30">/</span>
-      <span className={theme === "light" ? "font-semibold text-white" : "text-white/55"}>Light</span>
+      <span
+        className={
+          theme === "dark"
+            ? "rounded-full bg-white/16 px-3 py-1.5 font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+            : "rounded-full px-3 py-1.5 text-white/55"
+        }
+      >
+        Dark
+      </span>
+      <span
+        className={
+          theme === "light"
+            ? "rounded-full bg-white/16 px-3 py-1.5 font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+            : "rounded-full px-3 py-1.5 text-white/55"
+        }
+      >
+        Light
+      </span>
     </button>
   );
 }

@@ -96,7 +96,7 @@ export function ClueList({
             <button
               type="button"
               onClick={() => slide("prev")}
-              className="inet-outline soft-hover rounded-full border px-3 py-2 text-white/80"
+              className="inet-outline soft-hover flex h-12 w-12 items-center justify-center rounded-full border text-lg text-white/85 sm:h-14 sm:w-14 sm:text-xl"
               aria-label={t.common.back}
             >
               &#8249;
@@ -104,7 +104,7 @@ export function ClueList({
             <button
               type="button"
               onClick={() => slide("next")}
-              className="inet-outline soft-hover rounded-full border px-3 py-2 text-white/80"
+              className="inet-outline soft-hover flex h-12 w-12 items-center justify-center rounded-full border text-lg text-white/85 sm:h-14 sm:w-14 sm:text-xl"
               aria-label={t.game.nextQuestion}
             >
               &#8250;
