@@ -20,6 +20,10 @@ html {
   color-scheme: dark;
 }
 
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -33,6 +37,14 @@ body {
     linear-gradient(180deg, #0f172a 0%, #111827 44%, #0b1220 100%);
   color: var(--foreground);
   min-height: 100vh;
+}
+
+html[data-theme="light"] body {
+  background:
+    radial-gradient(circle at 12% 10%, rgba(251, 113, 133, 0.14), transparent 28%),
+    radial-gradient(circle at 86% 10%, rgba(251, 191, 36, 0.12), transparent 24%),
+    radial-gradient(circle at 76% 28%, rgba(56, 189, 248, 0.14), transparent 22%),
+    linear-gradient(180deg, #20314d 0%, #23385c 44%, #1a2944 100%);
 }
 
 ::selection {
@@ -142,4 +154,24 @@ body {
   animation-iteration-count: infinite;
   animation-timing-function: ease-in-out;
   box-shadow: 0 0 18px rgba(255, 255, 255, 0.35);
+}
+
+html[data-theme="light"] .glass-panel {
+  border-color: rgba(255, 255, 255, 0.18);
+  background:
+    linear-gradient(180deg, rgba(34, 53, 82, 0.82), rgba(29, 46, 72, 0.58));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 24px 60px rgba(15, 23, 42, 0.24);
+}
+
+html[data-theme="light"] .glass-panel-soft {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(35, 55, 86, 0.34);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme="light"] .glass-pill {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.12);
 }

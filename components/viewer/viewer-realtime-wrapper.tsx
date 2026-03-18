@@ -9,7 +9,6 @@ import { AnnouncementPanel } from "./announcement-panel";
 import { ClueList } from "./clue-list";
 import { CrosswordBoard } from "./crossword-board";
 import { FinalKeywordHint } from "./final-keyword-hint";
-import { GameStatusBadge } from "./game-status-badge";
 
 interface ViewerRealtimeWrapperProps {
   initialSnapshot: PublicViewerSnapshot;
@@ -48,33 +47,6 @@ export function ViewerRealtimeWrapper({
 
   return (
     <div className="space-y-6">
-      <section className="glass-panel rounded-[28px] p-5 sm:p-6">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-wrap items-center gap-3">
-            <GameStatusBadge status={gameStatus} />
-            {activeQuestionNumber !== null && (
-              <span className="glass-pill inline-flex rounded-full px-4 py-2 text-sm text-white/76">
-                {t.viewer.activeQuestion}: #{activeQuestionNumber}
-              </span>
-            )}
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="glass-panel-soft soft-hover rounded-3xl px-4 py-3">
-              <p className="text-xs uppercase tracking-[0.22em] text-white/45">
-                {t.viewer.questions}
-              </p>
-              <p className="mt-2 text-3xl font-bold text-white">{rows.length}</p>
-            </div>
-            <div className="glass-panel-soft soft-hover rounded-3xl px-4 py-3">
-              <p className="text-xs uppercase tracking-[0.22em] text-white/45">
-                {t.viewer.updates}
-              </p>
-              <p className="mt-2 text-3xl font-bold text-white">{events.length}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_340px]">
         <div className="glass-panel rounded-[30px] p-4 sm:p-5">
           <ClueList
@@ -83,6 +55,10 @@ export function ViewerRealtimeWrapper({
             onSelectRow={setSelectedRowIndex}
             boardTitle={t.viewer.boardTitle}
             boardSubtitle={game.subtitle || t.viewer.boardSubtitle}
+            gameStatus={gameStatus}
+            activeQuestionNumber={activeQuestionNumber}
+            questionCount={rows.length}
+            updateCount={events.length}
           />
           <div className="mt-5">
             <CrosswordBoard rows={rows} activeRowIndex={highlightedRowIndex} />

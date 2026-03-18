@@ -5,6 +5,7 @@ import { ROW_STATUS } from "@/features/games/constants";
 import type { PublicCrosswordRow } from "@/features/viewer/view-model";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils/cn";
+import { GameStatusBadge } from "./game-status-badge";
 
 interface ClueListProps {
   rows: PublicCrosswordRow[];
@@ -12,6 +13,10 @@ interface ClueListProps {
   onSelectRow: (rowIndex: number) => void;
   boardTitle: string;
   boardSubtitle: string;
+  gameStatus: string;
+  activeQuestionNumber: number | null;
+  questionCount: number;
+  updateCount: number;
 }
 
 export function ClueList({
@@ -20,6 +25,10 @@ export function ClueList({
   onSelectRow,
   boardTitle,
   boardSubtitle,
+  gameStatus,
+  activeQuestionNumber,
+  questionCount,
+  updateCount,
 }: ClueListProps) {
   const { t } = useTranslation();
   const sliderRef = useRef<HTMLDivElement>(null);
@@ -40,13 +49,49 @@ export function ClueList({
   return (
     <section className="rounded-[26px] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
       <div className="mb-4 flex flex-col gap-4">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <GameStatusBadge status={gameStatus} />
+              {activeQuestionNumber !== null && (
+                <span className="glass-pill inline-flex rounded-full px-4 py-2 text-sm text-white/76">
+                  {t.viewer.activeQuestion}: #{activeQuestionNumber}
+                </span>
+              )}
+            </div>
+
+            <div>
+              <span className="glass-pill inline-flex rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-white/78">
+                {boardTitle}
+              </span>
+              <h2 className="mt-3 text-3xl font-semibold text-white">{boardTitle}</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-white/56">{boardSubtitle}</p>
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[220px]">
+            <div className="glass-panel-soft soft-hover rounded-3xl px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.22em] text-white/45">
+                {t.viewer.questions}
+              </p>
+              <p className="mt-2 text-3xl font-bold text-white">{questionCount}</p>
+            </div>
+            <div className="glass-panel-soft soft-hover rounded-3xl px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.22em] text-white/45">
+                {t.viewer.updates}
+              </p>
+              <p className="mt-2 text-3xl font-bold text-white">{updateCount}</p>
+            </div>
+          </div>
+        </div>
+
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <span className="glass-pill inline-flex rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-white/78">
-              {boardTitle}
+              {t.viewer.questions}
             </span>
-            <h2 className="mt-3 text-3xl font-semibold text-white">{boardTitle}</h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-white/56">{boardSubtitle}</p>
+            <h3 className="mt-3 text-2xl font-semibold text-white">{t.viewer.questions}</h3>
+            <p className="mt-2 text-sm leading-6 text-white/56">{t.viewer.boardSubtitle}</p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -69,13 +114,6 @@ export function ClueList({
           </div>
         </div>
 
-        <div>
-          <span className="glass-pill inline-flex rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-white/78">
-            {t.viewer.questions}
-          </span>
-          <h3 className="mt-3 text-2xl font-semibold text-white">{t.viewer.questions}</h3>
-          <p className="mt-2 text-sm leading-6 text-white/56">{t.viewer.boardSubtitle}</p>
-        </div>
       </div>
 
       <div

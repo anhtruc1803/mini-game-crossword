@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useTranslation } from "@/lib/i18n";
 import { LanguageSwitcher } from "./language-switcher";
+import { ThemeToggle } from "./theme-toggle";
 
 export function AdminHeader() {
   const { t } = useTranslation();
@@ -27,7 +28,10 @@ export function AdminHeader() {
           </div>
         </div>
 
-        <LanguageSwitcher />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <LanguageSwitcher />
+        </div>
       </div>
     </header>
   );

@@ -2,6 +2,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { LanguageSwitcher } from "@/components/shared/language-switcher";
 import { ResilientImage } from "@/components/shared/resilient-image";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { ViewerFooter } from "@/components/shared/viewer-footer";
 import { BirthdayEffects } from "@/components/viewer/birthday-effects";
 import { ViewerRealtimeWrapper } from "@/components/viewer/viewer-realtime-wrapper";
@@ -60,7 +61,8 @@ export default async function ViewerPage({ params }: ViewerPageProps) {
         <header className="glass-panel relative mb-8 overflow-hidden rounded-[32px] p-5 sm:p-6 lg:p-8">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.12),transparent_28%),linear-gradient(135deg,rgba(251,191,36,0.06),transparent_55%)]" />
 
-          <div className="relative flex justify-end">
+          <div className="relative flex justify-end gap-2">
+            <ThemeToggle />
             <LanguageSwitcher />
           </div>
 
