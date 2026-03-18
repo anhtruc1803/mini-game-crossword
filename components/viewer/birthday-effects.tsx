@@ -43,14 +43,14 @@ function randomBetween(min: number, max: number) {
 function createBurst() {
   const burstId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-  return Array.from({ length: 18 }, (_, index) => ({
+  return Array.from({ length: 28 }, (_, index) => ({
     id: `${burstId}-${index}`,
     left: `${randomBetween(8, 92)}%`,
-    delay: `${randomBetween(0, 0.65).toFixed(2)}s`,
-    duration: `${randomBetween(4.8, 6.4).toFixed(2)}s`,
+    delay: `${randomBetween(0, 0.4).toFixed(2)}s`,
+    duration: `${randomBetween(5.2, 7.1).toFixed(2)}s`,
     rotate: `${randomBetween(-40, 40).toFixed(0)}deg`,
     color: confettiPalette[index % confettiPalette.length],
-    size: Math.round(randomBetween(8, 14)),
+    size: Math.round(randomBetween(9, 16)),
   }));
 }
 
@@ -75,7 +75,7 @@ export function BirthdayEffects({ enabled }: { enabled: boolean }) {
       burstTimeout = setTimeout(scheduleBurst, randomBetween(20000, 30000));
     }
 
-    burstTimeout = setTimeout(scheduleBurst, randomBetween(12000, 18000));
+    burstTimeout = setTimeout(scheduleBurst, 2200);
 
     return () => {
       if (burstTimeout) clearTimeout(burstTimeout);
@@ -86,7 +86,7 @@ export function BirthdayEffects({ enabled }: { enabled: boolean }) {
   if (!enabled) return null;
 
   return (
-    <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-[2] overflow-hidden">
+    <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-[12] overflow-hidden">
       {balloons.map((balloon, index) => (
         <div
           key={`balloon-${index}`}
@@ -126,7 +126,7 @@ export function BirthdayEffects({ enabled }: { enabled: boolean }) {
       {confettiBursts.map((piece) => (
         <span
           key={piece.id}
-          className={cn("birthday-confetti absolute top-[-10%] block rounded-sm", piece.color)}
+          className={cn("birthday-confetti absolute top-[-12%] block rounded-sm", piece.color)}
           style={{
             left: piece.left,
             width: `${piece.size}px`,
