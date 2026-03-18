@@ -38,10 +38,9 @@ export function CrosswordBoard({ rows, activeRowIndex }: CrosswordBoardProps) {
     <section className="rounded-[26px] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <span className="glass-pill inline-flex rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-white/78">
+          <span className="glass-pill pill-board inline-flex rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em]">
             {t.viewer.boardTitle}
           </span>
-          <h3 className="mt-3 text-2xl font-semibold text-white">{t.viewer.boardTitle}</h3>
         </div>
 
         <p className="max-w-xl text-sm leading-6 text-white/56">{t.viewer.boardSubtitle}</p>

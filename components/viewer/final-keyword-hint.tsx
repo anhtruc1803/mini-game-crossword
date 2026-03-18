@@ -22,7 +22,7 @@ export function FinalKeywordHint({
 
   return (
     <section className="rounded-[26px] border border-white/10 bg-white/[0.03] p-5 sm:p-6">
-      <span className="glass-pill inline-flex rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-white/78">
+      <span className="glass-pill pill-keyword inline-flex rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em]">
         {t.viewer.keyword}
       </span>
 

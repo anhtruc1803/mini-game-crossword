@@ -105,11 +105,10 @@ export function AnnouncementPanel({ announcementText, events }: AnnouncementPane
   return (
     <section className="glass-panel rounded-[28px] p-4 sm:p-5">
       <div className="mb-4">
-        <span className="glass-pill inline-flex rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-white/78">
+        <span className="glass-pill pill-updates inline-flex rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em]">
           {t.viewer.updates}
         </span>
-        <h3 className="mt-3 text-2xl font-semibold text-white">{t.viewer.updates}</h3>
-        <p className="mt-2 text-sm leading-6 text-white/56">{t.viewer.updatesSubtitle}</p>
+        <p className="mt-3 text-sm leading-6 text-white/56">{t.viewer.updatesSubtitle}</p>
       </div>
 
       {announcementText && (
