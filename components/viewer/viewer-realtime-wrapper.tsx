@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { GAME_STATUS } from "@/features/games/constants";
 import { useGameRealtime } from "@/features/viewer/hooks";
 import type { PublicViewerSnapshot } from "@/features/viewer/view-model";
@@ -20,11 +21,17 @@ export function ViewerRealtimeWrapper({
   const snapshot = useGameRealtime(initialSnapshot);
   const { game, rows, activeRowIndex, events, finalKeywordHint, finalKeyword } = snapshot;
   const { t } = useTranslation();
+  const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(activeRowIndex);
 
   const gameStatus = game?.gameStatus ?? GAME_STATUS.DRAFT;
   const gameEnded = gameStatus === GAME_STATUS.ENDED;
+  const highlightedRowIndex = selectedRowIndex ?? activeRowIndex;
   const activeQuestionNumber =
-    activeRowIndex !== null && activeRowIndex >= 0 ? activeRowIndex + 1 : null;
+    highlightedRowIndex !== null && highlightedRowIndex >= 0 ? highlightedRowIndex + 1 : null;
+
+  useEffect(() => {
+    setSelectedRowIndex(activeRowIndex);
+  }, [activeRowIndex]);
 
   if (!game) {
     return (
@@ -81,9 +88,13 @@ export function ViewerRealtimeWrapper({
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_340px]">
         <div className="glass-panel rounded-[30px] p-4 sm:p-5">
-          <ClueList rows={rows} activeRowIndex={activeRowIndex} />
+          <ClueList
+            rows={rows}
+            activeRowIndex={highlightedRowIndex}
+            onSelectRow={setSelectedRowIndex}
+          />
           <div className="mt-5">
-            <CrosswordBoard rows={rows} activeRowIndex={activeRowIndex} />
+            <CrosswordBoard rows={rows} activeRowIndex={highlightedRowIndex} />
           </div>
           <div className="mt-5">
             <FinalKeywordHint

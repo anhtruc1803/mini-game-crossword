@@ -9,9 +9,10 @@ import { cn } from "@/lib/utils/cn";
 interface ClueListProps {
   rows: PublicCrosswordRow[];
   activeRowIndex: number | null;
+  onSelectRow: (rowIndex: number) => void;
 }
 
-export function ClueList({ rows, activeRowIndex }: ClueListProps) {
+export function ClueList({ rows, activeRowIndex, onSelectRow }: ClueListProps) {
   const { t } = useTranslation();
   const sliderRef = useRef<HTMLDivElement>(null);
 
@@ -69,12 +70,17 @@ export function ClueList({ rows, activeRowIndex }: ClueListProps) {
           const isVisible = row.rowStatus === ROW_STATUS.CLUE_VISIBLE || isRevealed;
 
           return (
-            <article
+            <button
               key={row.id}
+              type="button"
+              onClick={() => onSelectRow(i)}
+              aria-pressed={isActive}
               className={cn(
-                "soft-hover snap-start rounded-[24px] border border-white/10 bg-white/[0.04] p-5 shadow-[0_10px_24px_rgba(2,6,23,0.12)]",
+                "soft-hover snap-start rounded-[24px] border border-white/10 bg-white/[0.04] p-5 text-left shadow-[0_10px_24px_rgba(2,6,23,0.12)] transition",
                 "min-w-[18rem] flex-1 basis-[18rem] sm:min-w-[20rem] sm:basis-[20rem] xl:min-w-[22rem] xl:basis-[22rem]",
-                isActive && "border-[var(--primary)]/30 bg-[var(--primary)]/10 shadow-[0_16px_30px_rgba(45,140,240,0.14)]"
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40",
+                isActive &&
+                  "border-[var(--primary)]/30 bg-[var(--primary)]/10 shadow-[0_16px_30px_rgba(45,140,240,0.14)]"
               )}
             >
               <div className="mb-4 flex items-center justify-between gap-3">
@@ -117,7 +123,7 @@ export function ClueList({ rows, activeRowIndex }: ClueListProps) {
                   </p>
                 </div>
               </div>
-            </article>
+            </button>
           );
         })}
       </div>
