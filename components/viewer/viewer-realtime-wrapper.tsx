@@ -50,25 +50,14 @@ export function ViewerRealtimeWrapper({
     <div className="space-y-6">
       <section className="glass-panel rounded-[28px] p-5 sm:p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <GameStatusBadge status={gameStatus} />
-              {activeQuestionNumber !== null && (
-                <span className="glass-pill inline-flex rounded-full px-4 py-2 text-sm text-white/76">
-                  {t.viewer.activeQuestion}: #{activeQuestionNumber}
-                </span>
-              )}
-            </div>
-            <div>
-              <h2 className="text-2xl font-semibold text-white sm:text-3xl">
-                {t.viewer.boardTitle}
-              </h2>
-              <p className="mt-1 text-sm leading-6 text-white/60 sm:text-base">
-                {game.subtitle || t.viewer.boardSubtitle}
-              </p>
-            </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <GameStatusBadge status={gameStatus} />
+            {activeQuestionNumber !== null && (
+              <span className="glass-pill inline-flex rounded-full px-4 py-2 text-sm text-white/76">
+                {t.viewer.activeQuestion}: #{activeQuestionNumber}
+              </span>
+            )}
           </div>
-
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="glass-panel-soft soft-hover rounded-3xl px-4 py-3">
               <p className="text-xs uppercase tracking-[0.22em] text-white/45">
@@ -92,6 +81,8 @@ export function ViewerRealtimeWrapper({
             rows={rows}
             activeRowIndex={highlightedRowIndex}
             onSelectRow={setSelectedRowIndex}
+            boardTitle={t.viewer.boardTitle}
+            boardSubtitle={game.subtitle || t.viewer.boardSubtitle}
           />
           <div className="mt-5">
             <CrosswordBoard rows={rows} activeRowIndex={highlightedRowIndex} />

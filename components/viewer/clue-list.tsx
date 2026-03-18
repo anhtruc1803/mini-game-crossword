@@ -10,9 +10,17 @@ interface ClueListProps {
   rows: PublicCrosswordRow[];
   activeRowIndex: number | null;
   onSelectRow: (rowIndex: number) => void;
+  boardTitle: string;
+  boardSubtitle: string;
 }
 
-export function ClueList({ rows, activeRowIndex, onSelectRow }: ClueListProps) {
+export function ClueList({
+  rows,
+  activeRowIndex,
+  onSelectRow,
+  boardTitle,
+  boardSubtitle,
+}: ClueListProps) {
   const { t } = useTranslation();
   const sliderRef = useRef<HTMLDivElement>(null);
 
@@ -31,32 +39,42 @@ export function ClueList({ rows, activeRowIndex, onSelectRow }: ClueListProps) {
 
   return (
     <section className="rounded-[26px] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
-      <div className="mb-4 flex items-end justify-between gap-3">
+      <div className="mb-4 flex flex-col gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <span className="glass-pill inline-flex rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-white/78">
+              {boardTitle}
+            </span>
+            <h2 className="mt-3 text-3xl font-semibold text-white">{boardTitle}</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-white/56">{boardSubtitle}</p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => slide("prev")}
+              className="inet-outline soft-hover rounded-full border px-3 py-2 text-white/80"
+              aria-label={t.common.back}
+            >
+              &#8249;
+            </button>
+            <button
+              type="button"
+              onClick={() => slide("next")}
+              className="inet-outline soft-hover rounded-full border px-3 py-2 text-white/80"
+              aria-label={t.game.nextQuestion}
+            >
+              &#8250;
+            </button>
+          </div>
+        </div>
+
         <div>
           <span className="glass-pill inline-flex rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-white/78">
             {t.viewer.questions}
           </span>
           <h3 className="mt-3 text-2xl font-semibold text-white">{t.viewer.questions}</h3>
           <p className="mt-2 text-sm leading-6 text-white/56">{t.viewer.boardSubtitle}</p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => slide("prev")}
-            className="inet-outline soft-hover rounded-full border px-3 py-2 text-white/80"
-            aria-label={t.common.back}
-          >
-            &#8249;
-          </button>
-          <button
-            type="button"
-            onClick={() => slide("next")}
-            className="inet-outline soft-hover rounded-full border px-3 py-2 text-white/80"
-            aria-label={t.game.nextQuestion}
-          >
-            &#8250;
-          </button>
         </div>
       </div>
 
