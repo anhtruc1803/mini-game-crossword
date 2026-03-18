@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "crypto";
 import { AppError } from "@/lib/security/errors";
 
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
@@ -97,7 +98,12 @@ export async function verifySessionToken(token: string | undefined) {
   if (!encodedPayload || !signature) return null;
 
   const expectedSignature = await signValue(encodedPayload);
-  if (signature !== expectedSignature) return null;
+  if (
+    signature.length !== expectedSignature.length ||
+    !timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))
+  ) {
+    return null;
+  }
 
   try {
     const payload = JSON.parse(

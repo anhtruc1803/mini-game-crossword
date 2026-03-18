@@ -1,10 +1,15 @@
 /**
  * Games business logic and orchestration.
  * All game state transitions must go through this service.
+ *
+ * Multi-step mutations use Prisma interactive transactions to ensure
+ * atomicity and prevent race conditions.
  */
 
+import { prisma } from "@/lib/db/prisma";
 import { APP_CONFIG } from "@/lib/constants/app-config";
 import { AppError } from "@/lib/security/errors";
+import { mapPrismaToGame, mapPrismaToCrosswordRow } from "./mapper";
 import {
   createGameSchema,
   createRowSchema,
@@ -24,16 +29,12 @@ import {
   deleteGameById,
   deleteRowById,
   insertGame,
-  insertGameEvent,
   insertRow,
-  resetAllRows,
-  updateGameAnnouncement,
-  updateGameCurrentRow,
-  updateGameStatus,
-  updateGameTotalRows,
   updateRowById,
-  updateRowStatus,
 } from "./mutations";
+
+/** Maximum number of events to keep per game. */
+const MAX_EVENTS_PER_GAME = 500;
 
 function assertGameTransition(current: string, next: string) {
   const allowed = GAME_STATUS_TRANSITIONS[current];
@@ -58,19 +59,6 @@ async function requireGame(id: string) {
   return game;
 }
 
-async function resequenceRows(gameId: string) {
-  const rows = await getGameRows(gameId);
-
-  await Promise.all(
-    rows.map((row, index) => {
-      if (row.rowOrder === index) return Promise.resolve(row);
-      return updateRowById(row.id, { rowOrder: index });
-    })
-  );
-
-  return getGameRows(gameId);
-}
-
 function getCurrentRow(rows: CrosswordRow[], currentRowIndex: number | null) {
   if (currentRowIndex === null) {
     throw new AppError("No active row set");
@@ -83,6 +71,66 @@ function getCurrentRow(rows: CrosswordRow[], currentRowIndex: number | null) {
 
   return currentRow;
 }
+
+/**
+ * Insert a game event inside a transaction and prune old events
+ * if the count exceeds MAX_EVENTS_PER_GAME.
+ */
+async function insertEventAndPrune(
+  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+  gameId: string,
+  eventType: string,
+  message: string,
+  payload?: Record<string, unknown>
+) {
+  await tx.gameEvent.create({
+    data: {
+      gameId,
+      eventType,
+      message,
+      payloadJson: payload ? JSON.stringify(payload) : null,
+    },
+  });
+
+  const count = await tx.gameEvent.count({ where: { gameId } });
+  if (count > MAX_EVENTS_PER_GAME) {
+    const oldest = await tx.gameEvent.findMany({
+      where: { gameId },
+      orderBy: { createdAt: "asc" },
+      take: count - MAX_EVENTS_PER_GAME,
+      select: { id: true },
+    });
+    await tx.gameEvent.deleteMany({
+      where: { id: { in: oldest.map((e) => e.id) } },
+    });
+  }
+}
+
+/**
+ * Resequence row orders inside a transaction (fix 3.2).
+ */
+async function resequenceRowsTx(
+  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+  gameId: string
+) {
+  const rows = await tx.crosswordRow.findMany({
+    where: { gameId },
+    orderBy: { rowOrder: "asc" },
+  });
+
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i].rowOrder !== i) {
+      await tx.crosswordRow.update({
+        where: { id: rows[i].id },
+        data: { rowOrder: i },
+      });
+    }
+  }
+
+  return rows.length;
+}
+
+// ── Game lifecycle ──────────────────────────────────────────
 
 export async function createGame(input: CreateGameInput): Promise<Game> {
   const validated = createGameSchema.parse(input);
@@ -98,52 +146,88 @@ export async function startGame(gameId: string): Promise<Game> {
     throw new AppError("Cannot start game with no rows");
   }
 
-  await updateGameTotalRows(gameId, rows.length);
-  await updateGameCurrentRow(gameId, 0);
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.game.update({
+      where: { id: gameId },
+      data: {
+        totalRows: rows.length,
+        currentRowIndex: 0,
+        gameStatus: GAME_STATUS.LIVE,
+      },
+    });
 
-  const updated = await updateGameStatus(gameId, GAME_STATUS.LIVE as GameStatus);
-  await insertGameEvent(gameId, EVENT_TYPES.GAME_STARTED, "Game đã bắt đầu");
-  return updated;
+    await insertEventAndPrune(tx, gameId, EVENT_TYPES.GAME_STARTED, "Game đã bắt đầu");
+    return mapPrismaToGame(updated);
+  });
 }
 
 export async function pauseGame(gameId: string): Promise<Game> {
   const game = await requireGame(gameId);
   assertGameTransition(game.gameStatus, GAME_STATUS.PAUSED);
 
-  const updated = await updateGameStatus(gameId, GAME_STATUS.PAUSED as GameStatus);
-  await insertGameEvent(gameId, EVENT_TYPES.GAME_PAUSED, "Game tạm dừng");
-  return updated;
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.game.update({
+      where: { id: gameId },
+      data: { gameStatus: GAME_STATUS.PAUSED },
+    });
+
+    await insertEventAndPrune(tx, gameId, EVENT_TYPES.GAME_PAUSED, "Game tạm dừng");
+    return mapPrismaToGame(updated);
+  });
 }
 
 export async function resumeGame(gameId: string): Promise<Game> {
   const game = await requireGame(gameId);
   assertGameTransition(game.gameStatus, GAME_STATUS.LIVE);
 
-  const updated = await updateGameStatus(gameId, GAME_STATUS.LIVE as GameStatus);
-  await insertGameEvent(gameId, EVENT_TYPES.GAME_RESUMED, "Game tiếp tục");
-  return updated;
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.game.update({
+      where: { id: gameId },
+      data: { gameStatus: GAME_STATUS.LIVE },
+    });
+
+    await insertEventAndPrune(tx, gameId, EVENT_TYPES.GAME_RESUMED, "Game tiếp tục");
+    return mapPrismaToGame(updated);
+  });
 }
 
 export async function endGame(gameId: string): Promise<Game> {
   const game = await requireGame(gameId);
   assertGameTransition(game.gameStatus, GAME_STATUS.ENDED);
 
-  const updated = await updateGameStatus(gameId, GAME_STATUS.ENDED as GameStatus);
-  await insertGameEvent(gameId, EVENT_TYPES.GAME_ENDED, "Game đã kết thúc");
-  return updated;
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.game.update({
+      where: { id: gameId },
+      data: { gameStatus: GAME_STATUS.ENDED },
+    });
+
+    await insertEventAndPrune(tx, gameId, EVENT_TYPES.GAME_ENDED, "Game đã kết thúc");
+    return mapPrismaToGame(updated);
+  });
 }
 
 export async function resetGame(gameId: string): Promise<Game> {
   const game = await requireGame(gameId);
   assertGameTransition(game.gameStatus, GAME_STATUS.DRAFT);
 
-  await resetAllRows(gameId);
-  await updateGameCurrentRow(gameId, null);
-  await updateGameAnnouncement(gameId, null);
+  return prisma.$transaction(async (tx) => {
+    await tx.crosswordRow.updateMany({
+      where: { gameId },
+      data: { rowStatus: "hidden" },
+    });
 
-  const updated = await updateGameStatus(gameId, GAME_STATUS.DRAFT as GameStatus);
-  await insertGameEvent(gameId, EVENT_TYPES.GAME_RESET, "Game đã được reset");
-  return updated;
+    const updated = await tx.game.update({
+      where: { id: gameId },
+      data: {
+        currentRowIndex: null,
+        announcementText: null,
+        gameStatus: GAME_STATUS.DRAFT,
+      },
+    });
+
+    await insertEventAndPrune(tx, gameId, EVENT_TYPES.GAME_RESET, "Game đã được reset");
+    return mapPrismaToGame(updated);
+  });
 }
 
 export async function deleteGame(gameId: string): Promise<void> {
@@ -155,6 +239,8 @@ export async function deleteGame(gameId: string): Promise<void> {
   return deleteGameById(gameId);
 }
 
+// ── Row state transitions ───────────────────────────────────
+
 export async function revealClue(gameId: string): Promise<CrosswordRow> {
   const game = await requireGame(gameId);
   if (game.gameStatus !== GAME_STATUS.LIVE) {
@@ -165,14 +251,21 @@ export async function revealClue(gameId: string): Promise<CrosswordRow> {
   const currentRow = getCurrentRow(rows, game.currentRowIndex);
   assertRowTransition(currentRow.rowStatus, ROW_STATUS.CLUE_VISIBLE);
 
-  const updated = await updateRowStatus(currentRow.id, ROW_STATUS.CLUE_VISIBLE as RowStatus);
-  await insertGameEvent(
-    gameId,
-    EVENT_TYPES.CLUE_OPENED,
-    `Câu ${currentRow.rowOrder + 1} đã mở`,
-    { rowId: currentRow.id, rowOrder: currentRow.rowOrder }
-  );
-  return updated;
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.crosswordRow.update({
+      where: { id: currentRow.id },
+      data: { rowStatus: ROW_STATUS.CLUE_VISIBLE },
+    });
+
+    await insertEventAndPrune(
+      tx,
+      gameId,
+      EVENT_TYPES.CLUE_OPENED,
+      `Câu ${currentRow.rowOrder + 1} đã mở`,
+      { rowId: currentRow.id, rowOrder: currentRow.rowOrder }
+    );
+    return mapPrismaToCrosswordRow(updated);
+  });
 }
 
 export async function revealAnswer(gameId: string): Promise<CrosswordRow> {
@@ -185,14 +278,21 @@ export async function revealAnswer(gameId: string): Promise<CrosswordRow> {
   const currentRow = getCurrentRow(rows, game.currentRowIndex);
   assertRowTransition(currentRow.rowStatus, ROW_STATUS.ANSWER_REVEALED);
 
-  const updated = await updateRowStatus(currentRow.id, ROW_STATUS.ANSWER_REVEALED as RowStatus);
-  await insertGameEvent(
-    gameId,
-    EVENT_TYPES.ANSWER_REVEALED,
-    `Đáp án câu ${currentRow.rowOrder + 1}: ${currentRow.answerText}`,
-    { rowId: currentRow.id, rowOrder: currentRow.rowOrder, answer: currentRow.answerText }
-  );
-  return updated;
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.crosswordRow.update({
+      where: { id: currentRow.id },
+      data: { rowStatus: ROW_STATUS.ANSWER_REVEALED },
+    });
+
+    await insertEventAndPrune(
+      tx,
+      gameId,
+      EVENT_TYPES.ANSWER_REVEALED,
+      `Đáp án câu ${currentRow.rowOrder + 1}: ${currentRow.answerText}`,
+      { rowId: currentRow.id, rowOrder: currentRow.rowOrder, answer: currentRow.answerText }
+    );
+    return mapPrismaToCrosswordRow(updated);
+  });
 }
 
 export async function advanceToNextRow(gameId: string): Promise<Game> {
@@ -206,14 +306,21 @@ export async function advanceToNextRow(gameId: string): Promise<Game> {
     throw new AppError("Already at the last row");
   }
 
-  const updated = await updateGameCurrentRow(gameId, nextIndex);
-  await insertGameEvent(
-    gameId,
-    EVENT_TYPES.ROW_ADVANCED,
-    `Chuyển sang câu ${nextIndex + 1}`,
-    { rowIndex: nextIndex }
-  );
-  return updated;
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.game.update({
+      where: { id: gameId },
+      data: { currentRowIndex: nextIndex },
+    });
+
+    await insertEventAndPrune(
+      tx,
+      gameId,
+      EVENT_TYPES.ROW_ADVANCED,
+      `Chuyển sang câu ${nextIndex + 1}`,
+      { rowIndex: nextIndex }
+    );
+    return mapPrismaToGame(updated);
+  });
 }
 
 export async function rewindToPreviousRow(gameId: string): Promise<Game> {
@@ -237,14 +344,22 @@ export async function rewindToPreviousRow(gameId: string): Promise<Game> {
   }
 
   const previousIndex = currentIndex - 1;
-  const updated = await updateGameCurrentRow(gameId, previousIndex);
-  await insertGameEvent(
-    gameId,
-    EVENT_TYPES.ROW_REWOUND,
-    `Quay lại câu ${previousIndex + 1}`,
-    { rowIndex: previousIndex }
-  );
-  return updated;
+
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.game.update({
+      where: { id: gameId },
+      data: { currentRowIndex: previousIndex },
+    });
+
+    await insertEventAndPrune(
+      tx,
+      gameId,
+      EVENT_TYPES.ROW_REWOUND,
+      `Quay lại câu ${previousIndex + 1}`,
+      { rowIndex: previousIndex }
+    );
+    return mapPrismaToGame(updated);
+  });
 }
 
 export async function updateAnnouncementText(
@@ -260,15 +375,25 @@ export async function updateAnnouncementText(
   }
 
   const normalizedText = text?.trim() ? text.trim() : null;
-  const updated = await updateGameAnnouncement(gameId, normalizedText);
-  await insertGameEvent(
-    gameId,
-    EVENT_TYPES.ANNOUNCEMENT_UPDATED,
-    normalizedText ? `Thông báo: ${normalizedText}` : "Đã xóa thông báo",
-    normalizedText ? { text: normalizedText } : { text: null }
-  );
-  return updated;
+
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.game.update({
+      where: { id: gameId },
+      data: { announcementText: normalizedText },
+    });
+
+    await insertEventAndPrune(
+      tx,
+      gameId,
+      EVENT_TYPES.ANNOUNCEMENT_UPDATED,
+      normalizedText ? `Thông báo: ${normalizedText}` : "Đã xóa thông báo",
+      normalizedText ? { text: normalizedText } : { text: null }
+    );
+    return mapPrismaToGame(updated);
+  });
 }
+
+// ── Row CRUD ────────────────────────────────────────────────
 
 export async function createRow(input: CreateRowInput): Promise<CrosswordRow> {
   const validated = createRowSchema.parse(input);
@@ -284,7 +409,10 @@ export async function createRow(input: CreateRowInput): Promise<CrosswordRow> {
 
   const nextRowOrder = existingRows.length;
   const row = await insertRow({ ...validated, rowOrder: nextRowOrder });
-  await updateGameTotalRows(validated.gameId, existingRows.length + 1);
+  await prisma.game.update({
+    where: { id: validated.gameId },
+    data: { totalRows: existingRows.length + 1 },
+  });
 
   return row;
 }
@@ -328,13 +456,20 @@ export async function deleteRow(id: string): Promise<void> {
     throw new AppError("Cannot delete rows while the game is live");
   }
 
-  await deleteRowById(id);
-  const rows = await resequenceRows(row.gameId);
-  await updateGameTotalRows(row.gameId, rows.length);
+  await prisma.$transaction(async (tx) => {
+    await tx.crosswordRow.delete({ where: { id } });
 
-  if (game.currentRowIndex !== null) {
-    const nextCurrentRow =
-      rows.length === 0 ? null : Math.min(game.currentRowIndex, rows.length - 1);
-    await updateGameCurrentRow(row.gameId, nextCurrentRow);
-  }
+    const newCount = await resequenceRowsTx(tx, row.gameId);
+
+    const updateData: Record<string, unknown> = { totalRows: newCount };
+    if (game.currentRowIndex !== null) {
+      updateData.currentRowIndex =
+        newCount === 0 ? null : Math.min(game.currentRowIndex, newCount - 1);
+    }
+
+    await tx.game.update({
+      where: { id: row.gameId },
+      data: updateData,
+    });
+  });
 }

@@ -16,7 +16,10 @@ import * as gameService from "@/features/games/service";
 import * as programQueries from "@/features/programs/queries";
 import * as programService from "@/features/programs/service";
 import * as themeService from "@/features/themes/service";
-import type { ProgramStatus } from "@/features/programs/types";
+import { z } from "zod";
+
+const uuidSchema = z.string().uuid();
+const programStatusSchema = z.enum(["draft", "live", "ended"]);
 
 type ActionResult = {
   success?: boolean;
@@ -30,7 +33,12 @@ type ThemeActionResult = ActionResult & {
 function parseHighlightedIndexes(rawValue: FormDataEntryValue | null) {
   if (!rawValue) return [];
 
-  const parsed = JSON.parse(String(rawValue));
+  const raw = String(rawValue);
+  if (raw.length > 1000) {
+    throw new Error("Highlighted indexes payload too large");
+  }
+
+  const parsed = JSON.parse(raw);
   if (!Array.isArray(parsed) || parsed.some((value) => typeof value !== "number")) {
     throw new Error("Invalid highlighted indexes payload");
   }
@@ -218,11 +226,13 @@ export async function deleteProgramAction(id: string): Promise<ActionResult | un
 
 export async function changeProgramStatusAction(
   id: string,
-  newStatus: ProgramStatus
+  newStatus: string
 ): Promise<ActionResult> {
   try {
     return await withAdminMutation("change-program-status", async () => {
-      await programService.changeProgramStatus(id, newStatus);
+      const validatedId = uuidSchema.parse(id);
+      const validatedStatus = programStatusSchema.parse(newStatus);
+      await programService.changeProgramStatus(validatedId, validatedStatus);
       revalidatePath(ROUTES.admin.program(id));
       revalidatePath(ROUTES.admin.programs);
       return { success: true };
@@ -304,7 +314,7 @@ export async function createGameAction(formData: FormData): Promise<ActionResult
   try {
     return await withAdminMutation("create-game", async () => {
       const input = {
-        programId: formData.get("programId") as string,
+        programId: uuidSchema.parse(formData.get("programId")),
         title: formData.get("title") as string,
         subtitle: (formData.get("subtitle") as string) || undefined,
         finalKeyword: (formData.get("finalKeyword") as string) || undefined,
@@ -323,7 +333,7 @@ export async function createGameAction(formData: FormData): Promise<ActionResult
 export async function createRowAction(formData: FormData): Promise<ActionResult> {
   try {
     return await withAdminMutation("create-row", async () => {
-      const gameId = formData.get("gameId") as string;
+      const gameId = uuidSchema.parse(formData.get("gameId"));
       const input = {
         gameId,
         clueText: formData.get("clueText") as string,

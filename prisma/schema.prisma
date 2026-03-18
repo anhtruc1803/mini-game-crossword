@@ -107,6 +107,7 @@ model CrosswordRow {
   updatedAt              DateTime @updatedAt @map("updated_at")
 
   @@unique([gameId, rowOrder])
+  @@index([gameId, rowOrder])
   @@map("crossword_rows")
 }
 
@@ -122,5 +123,6 @@ model GameEvent {
   createdAt   DateTime @default(now()) @map("created_at")
   createdBy   String?  @map("created_by")
 
+  @@index([gameId, createdAt])
   @@map("game_events")
 }

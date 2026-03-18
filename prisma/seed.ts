@@ -162,6 +162,16 @@ async function seedDemoData() {
 }
 
 async function main() {
+  // Refuse to seed with weak credentials in production
+  if (process.env.NODE_ENV === "production") {
+    const password = readSeedValue("SEED_ADMIN_PASSWORD");
+    if (!password || password.length < 12) {
+      throw new Error(
+        "Refusing to seed in production with a weak or missing SEED_ADMIN_PASSWORD (minimum 12 characters)."
+      );
+    }
+  }
+
   await seedAdminUser();
   await seedDemoData();
 }

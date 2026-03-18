@@ -1,6 +1,9 @@
 /**
  * Viewer queries assemble the full public game snapshot for display.
  * Public snapshots must never expose unrevealed answers or the final keyword early.
+ *
+ * Uses Prisma `include` to fetch program + theme + game + rows + events
+ * in a single query instead of 5 sequential round-trips.
  */
 
 import { prisma } from "@/lib/db/prisma";
@@ -39,8 +42,20 @@ export async function getViewerSnapshot(
     return cachedSnapshot.snapshot;
   }
 
+  // Single query with JOINs instead of 5 sequential queries
   const prismaProgram = await prisma.program.findUnique({
     where: { slug: programSlug },
+    include: {
+      theme: true,
+      games: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        include: {
+          rows: { orderBy: { rowOrder: "asc" } },
+          events: { orderBy: { createdAt: "desc" }, take: 20 },
+        },
+      },
+    },
   });
 
   if (!prismaProgram) {
@@ -52,19 +67,8 @@ export async function getViewerSnapshot(
   }
 
   const program = mapPrismaToProgram(prismaProgram);
-
-  let theme = null;
-  if (prismaProgram.themeId) {
-    const prismaTheme = await prisma.theme.findUnique({
-      where: { id: prismaProgram.themeId },
-    });
-    theme = prismaTheme ? mapPrismaToTheme(prismaTheme) : null;
-  }
-
-  const prismaGame = await prisma.game.findFirst({
-    where: { programId: prismaProgram.id },
-    orderBy: { createdAt: "desc" },
-  });
+  const theme = prismaProgram.theme ? mapPrismaToTheme(prismaProgram.theme) : null;
+  const prismaGame = prismaProgram.games[0] ?? null;
 
   if (!prismaGame) {
     const emptySnapshot: PublicViewerSnapshot = {
@@ -87,19 +91,8 @@ export async function getViewerSnapshot(
   }
 
   const game = mapPrismaToGame(prismaGame);
-
-  const prismaRows = await prisma.crosswordRow.findMany({
-    where: { gameId: prismaGame.id },
-    orderBy: { rowOrder: "asc" },
-  });
-  const rows = prismaRows.map(mapPrismaToCrosswordRow);
-
-  const prismaEvents = await prisma.gameEvent.findMany({
-    where: { gameId: prismaGame.id },
-    orderBy: { createdAt: "desc" },
-    take: 20,
-  });
-  const events = prismaEvents.map(mapPrismaToGameEvent);
+  const rows = prismaGame.rows.map(mapPrismaToCrosswordRow);
+  const events = prismaGame.events.map(mapPrismaToGameEvent);
 
   const snapshot: PublicViewerSnapshot = {
     program,

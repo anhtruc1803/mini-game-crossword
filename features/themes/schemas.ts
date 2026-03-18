@@ -2,19 +2,23 @@ import { z } from "zod";
 
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 
-const trustedAssetUrlSchema = z
-  .string()
-  .url()
-  .refine((value) => {
-    const hostname = new URL(value).hostname;
-    const allowedHosts = [
-      "localhost",
-      "127.0.0.1",
-      "images.unsplash.com",
-    ];
+const LOCAL_PATH_PREFIXES = ["/media/", "/uploads/"];
+const ALLOWED_EXTERNAL_HOSTS = ["localhost", "127.0.0.1", "images.unsplash.com"];
 
-    return allowedHosts.includes(hostname);
-  }, "Asset URL must be hosted on an approved domain");
+const trustedAssetUrlSchema = z.string().refine((value) => {
+  // Allow local media/upload paths
+  if (LOCAL_PATH_PREFIXES.some((prefix) => value.startsWith(prefix))) {
+    return true;
+  }
+
+  // Validate external URLs against approved hosts
+  try {
+    const hostname = new URL(value).hostname;
+    return ALLOWED_EXTERNAL_HOSTS.includes(hostname);
+  } catch {
+    return false;
+  }
+}, "Asset URL must be from an approved domain or a local upload path");
 
 export const createThemeSchema = z.object({
   name: z.string().trim().min(1).max(100),

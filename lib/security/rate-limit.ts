@@ -20,6 +20,16 @@ type MemoryEntry = {
 
 const memoryStore = new Map<string, MemoryEntry>();
 
+if (
+  process.env.NODE_ENV === "production" &&
+  !process.env.UPSTASH_REDIS_REST_URL
+) {
+  console.warn(
+    "[rate-limit] Running with in-memory rate limiter. " +
+      "Configure UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN for production."
+  );
+}
+
 function getRedisConfig() {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
