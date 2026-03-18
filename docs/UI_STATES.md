@@ -4,107 +4,118 @@
 
 ### Loading
 
-- Route-level loading UI comes from `app/(public)/[programSlug]/loading.tsx`.
-- The public page renders a loading shell while the initial snapshot is fetched.
+- route loading uses `app/(public)/[programSlug]/loading.tsx`
 
 ### Not found
 
-- If `programSlug` does not resolve to a program, the route returns `notFound()`.
+- invalid slug returns `notFound()`
 
 ### No game yet
 
-- Program exists, but there is no game for it.
-- Viewer shows program branding and a "starting soon" style empty state.
+- hero still renders
+- stage shows starting-soon empty state
 
-### Draft game
+### Draft
 
-- Status badge shows draft/about-to-start state.
-- Rows exist, but answers remain hidden.
-- Final keyword is not shown.
+- status badge shows upcoming state
+- answers remain hidden
+- final keyword stays hidden
 
-### Live game
+### Live
 
-- Active row is highlighted.
-- Hidden rows show blank cells.
-- `clue_visible` rows show the clue text in the clue list, but not letters.
-- `answer_revealed` rows show letters and highlighted keyword cells.
-- Announcement and recent events are visible.
+- status badge pulses lightly
+- balloons, sparkles, and confetti may appear
+- question slider and board stay interactive
+- clicking a question card highlights the matching row
 
-### Paused game
+### Paused
 
-- Same visible board state as live.
-- Status badge changes to paused.
-- No special polling behavior changes on the client.
+- board stays visible
+- status changes to paused
 
-### Ended game
+### Ended
 
-- Existing board state remains visible.
-- Final keyword may be shown if present.
-- Final keyword is only sent to the public viewer once the game is ended.
+- final keyword may appear
+- viewer keeps last known board state
 
-### Polling behavior
+## Viewer layout
 
-- Viewer state is initialized with SSR.
-- Client polling refreshes the whole snapshot every `APP_CONFIG.pollingIntervalMs`.
-- Polling pauses when the browser tab is hidden.
+### Hero
 
-## Crossword row cell states
+- program image
+- title
+- description
+- iNET logo
+- language switch
+- dark/light switch
 
-### hidden
+### Stage panel
 
-- No letters are shown.
-- Cells render as muted blanks.
+- live status
+- current question
+- question count
+- update count
+- board label
+- question slider
+- crossword board
+- keyword hint
 
-### clue_visible
+### Updates panel
 
-- Clue list shows the clue text.
-- Board still does not show letters.
+- announcement card
+- timeline of recent events
 
-### answer_revealed
+## Theme states
 
-- Board shows letters.
-- Highlighted indexes get accent styling.
-- Clue list also shows the revealed answer text.
+### Dark mode
+
+- default
+- deep navy glass
+- higher contrast for stream display
+
+### Light mode
+
+- brighter blue glass treatment
+- stronger visual difference from dark mode
+- still keeps Birthday Glass styling
 
 ## Admin UI
 
-### Login page
+### Login
 
-- Email + password form
-- Inline error state on failed sign-in
-- Redirects to programs list on success
-
-### Protected admin routes
-
-- `/admin/programs/*` requires a valid signed cookie and a database-backed admin account
-- invalid sessions are redirected to `/admin/login`
+- email/password form
+- inline errors
 
 ### Programs list
 
-- empty state if there are no programs
-- card/list state when programs exist
+- empty state if no program exists
+- glass cards when programs exist
 
 ### Program detail
 
-- summary information for the selected program
-- status controls
-- navigation to game, rows, and theme sections
+- summary hero
+- image preview
+- actions and tabs
 
-### Game control page
+### Game control
 
-- start, pause, resume, end, reset controls
-- row advancement controls
-- announcement management
-- event log display
+- live controls
+- rewind support
+- event history
 
 ### Rows page
 
-- row creation form
-- rows table/editor
-- live games block row edits and deletes at the service layer
+- row form
+- row list
+- edit lock while game is live
 
 ### Theme page
 
-- theme creation or update form
-- current UI mainly exposes name and core color controls
-- theme image URLs exist in the data model, but not all upload flows are wired into the form yet
+- theme management form
+
+## Motion notes
+
+- hover is soft, not aggressive
+- live badge pulse is subtle
+- cursor aura is light
+- confetti is periodic, not constant

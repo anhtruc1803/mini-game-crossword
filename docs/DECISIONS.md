@@ -2,76 +2,72 @@
 
 ## Why Prisma + SQLite
 
-- The current project targets a simple single-server deployment.
-- Prisma gives typed queries and a migration workflow without Supabase-specific code.
-- SQLite keeps infrastructure light for an event-site style application.
+- lightweight for a single-server deployment
+- easy local setup
+- typed Prisma client
+- simple backup model
 
 Tradeoff:
 
-- This is not the best long-term choice for multi-instance scaling.
-- If viewer traffic or operational requirements grow significantly, PostgreSQL should be the next step.
+- not ideal for multi-instance horizontal scaling
 
-## Why signed cookie sessions instead of in-memory sessions
+## Why signed cookies for admin sessions
 
-- In-memory sessions were lost on restart.
-- In-memory sessions do not work well once more than one process is involved.
-- Signed cookies let the app verify the session format on every request without a session table.
-
-Tradeoff:
-
-- Cookie invalidation is not centrally tracked.
-- Server-side admin checks still remain necessary.
-
-## Why polling instead of realtime subscriptions
-
-- The codebase no longer depends on Supabase Realtime.
-- Polling keeps the viewer pipeline simpler and easier to operate with Prisma + SQLite.
-- Full snapshot replacement is easier to reason about than partial live reducers.
+- avoids keeping session state in memory
+- survives process restarts better than in-memory session maps
+- works well for a small self-hosted admin console
 
 Tradeoff:
 
-- Polling is less responsive than WebSockets.
-- Polling frequency must stay conservative because SQLite is local and single-node.
+- no central session revocation table
+
+## Why polling instead of WebSockets
+
+- simpler operating model
+- easier to reason about with sanitized whole snapshots
+- good enough for a livestream companion site
+
+Tradeoff:
+
+- less immediate than sockets
+- polling interval must stay conservative because SQLite is local
 
 ## Why server-side snapshot sanitization
 
-- The public viewer must never receive hidden answers early.
-- Hiding data only in the UI is not enough because payloads are visible in the browser.
-- Sanitizing the snapshot server-side protects both SSR payloads and API responses.
+- public payloads are visible in the browser
+- UI-only hiding is not enough
+- hidden answers and final keyword must never leak early
 
-This is one of the most important security decisions in the project.
+This remains a non-negotiable rule.
 
-## Why local filesystem asset storage
+## Why local file storage
 
-- It avoids requiring external object storage for a simple deployment.
-- It is easy to back up together with the app.
-- It works well enough for controlled admin uploads on one server.
+- simple Ubuntu deployment
+- no object storage dependency
+- easy to inspect and back up
 
 Tradeoff:
 
-- Files are public once stored under `public/uploads`.
-- Horizontal scaling and CDN workflows are harder than with object storage.
+- shared multi-node storage is harder later
 
-## Why feature-based folders
+## Why Birthday Glass UI
 
-- The codebase is easier to navigate by business domain.
-- Related types, schemas, queries, mutations, and services stay near each other.
-- It reduces the chance of scattering one feature across many unrelated folders.
+- fits celebratory programs better than plain dark admin UI
+- still preserves readability for a livestream screen
+- supports iNET brand accents without becoming too noisy
 
-## Why keep route protection in multiple layers
+## Why keep dark and light mode
 
-- `proxy.ts` blocks obviously invalid requests early.
-- `app/admin/programs/layout.tsx` prevents SSR leaks.
-- `requireAdmin()` protects server actions and sensitive reads.
+- viewer screens vary widely across venues and devices
+- dark works well for streams
+- light helps operators and mobile users in bright environments
 
-This repetition is intentional because admin data exposure is a high-risk failure mode.
+## When to revisit the current architecture
 
-## When these decisions should be revisited
+Revisit if:
 
-Revisit the architecture if any of these become true:
-
-- more than one app instance is needed
-- viewer polling becomes too expensive
-- asset storage needs privacy, CDN delivery, or shared storage
-- admin session revocation needs to be centrally managed
-- reporting or analytics require heavier database workloads
+- more than one app instance is required
+- polling becomes too expensive
+- media needs CDN or private object storage
+- admin auth needs centralized session revocation
+- analytics/reporting load grows beyond SQLite comfort

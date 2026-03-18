@@ -1,36 +1,17 @@
 # Ubuntu Deployment Guide
 
-This guide covers production deployment for Ubuntu 22.04 LTS and Ubuntu 24.04 LTS using the current codebase:
+This guide is for Ubuntu 22.04 and 24.04.
 
-- Next.js app
-- Prisma
-- SQLite
-- signed cookie admin auth
-- local filesystem asset storage
-- optional Upstash Redis rate limiting
+Current deployment target:
 
-## 1. Recommended deployment model
+- one Ubuntu server
+- Node.js 22
+- nginx
+- systemd
+- Prisma + SQLite
+- local media storage
 
-This project is currently best suited to a single-server deployment.
-
-- `nginx` reverse proxy
-- `systemd` process manager
-- Node.js 22 LTS
-- SQLite file on local disk
-- optional Upstash Redis for rate limiting
-
-If you need multiple app instances or shared storage, plan a later migration to PostgreSQL and external object storage.
-
-## 2. Server requirements
-
-- Ubuntu 22.04 or 24.04
-- 2 vCPU minimum
-- 2 GB RAM minimum
-- 20 GB disk
-- non-root sudo user
-- domain pointed to the server
-
-## 3. Install system packages
+## 1. Install packages
 
 ```bash
 sudo apt update
@@ -38,16 +19,15 @@ sudo apt upgrade -y
 sudo apt install -y curl git ufw nginx
 ```
 
-Enable the firewall:
+Open firewall:
 
 ```bash
 sudo ufw allow OpenSSH
 sudo ufw allow 'Nginx Full'
 sudo ufw enable
-sudo ufw status
 ```
 
-## 4. Install Node.js 22 LTS
+## 2. Install Node.js 22
 
 ```bash
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
@@ -56,7 +36,7 @@ node -v
 npm -v
 ```
 
-## 5. Clone the project
+## 3. Clone the repo
 
 ```bash
 sudo mkdir -p /var/www/mini-game-crossword
@@ -66,75 +46,61 @@ git clone https://github.com/anhtruc1803/mini-game-crossword.git .
 git checkout main
 ```
 
-## 6. Create runtime directories
-
-The app expects a writable SQLite location and a writable upload directory.
+## 4. Prepare writable directories
 
 ```bash
 mkdir -p data
 mkdir -p public/uploads
+mkdir -p data/uploads
 ```
 
-## 7. Configure environment variables
-
-Create the production env file:
+## 5. Create `.env.production`
 
 ```bash
 cp .env.example .env.production
 nano .env.production
 ```
 
-Recommended production template:
+Recommended template:
 
 ```dotenv
 DATABASE_URL="file:../data/app.db"
 SESSION_SECRET="replace-with-a-long-random-secret"
 
-# Optional: rate limit storage
-UPSTASH_REDIS_REST_URL=https://your-upstash-instance.upstash.io
-UPSTASH_REDIS_REST_TOKEN=your-upstash-token
+SEED_ADMIN_EMAIL="admin@example.com"
+SEED_ADMIN_PASSWORD="change-me-before-seeding"
 
-# Optional: only needed if you want prisma db seed to create an admin user
-SEED_ADMIN_EMAIL=admin@example.com
-SEED_ADMIN_PASSWORD=change-me-before-seeding
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
 ```
 
-Required variables:
+Required:
 
 - `DATABASE_URL`
 - `SESSION_SECRET`
 
-Optional variables:
+Optional:
 
-- `UPSTASH_REDIS_REST_URL`
-- `UPSTASH_REDIS_REST_TOKEN`
 - `SEED_ADMIN_EMAIL`
 - `SEED_ADMIN_PASSWORD`
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
 
-Important notes:
-
-- `SESSION_SECRET` must be a strong random string in production
-- do not commit `.env.production`
-- if Redis env vars are missing, rate limiting falls back to in-memory counters
-
-## 8. Install dependencies and prepare Prisma
+## 6. Install and prepare database
 
 ```bash
-cd /var/www/mini-game-crossword
 npm ci
 npm exec prisma generate
 npm exec prisma migrate deploy
 ```
 
-Optional seed step:
+Optional seed:
 
 ```bash
 npm exec prisma db seed
 ```
 
-If you run `db seed` without `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD`, the script will skip admin creation and only prepare demo data.
-
-## 9. Build and verify before starting
+## 7. Verify locally on server
 
 ```bash
 npm run lint
@@ -142,12 +108,13 @@ npm test
 npm run build
 ```
 
-## 10. Set file permissions
+## 8. Set file permissions
 
-The service user must be able to write:
+The app user must be able to write to:
 
 - `data/`
 - `public/uploads/`
+- `data/uploads/`
 
 Example:
 
@@ -155,15 +122,15 @@ Example:
 sudo chown -R www-data:www-data /var/www/mini-game-crossword
 ```
 
-## 11. Create systemd service
+## 9. Create systemd service
 
-Create the unit file:
+Create:
 
 ```bash
 sudo nano /etc/systemd/system/mini-game-crossword.service
 ```
 
-Use this config:
+Use:
 
 ```ini
 [Unit]
@@ -188,7 +155,7 @@ TimeoutStopSec=30
 WantedBy=multi-user.target
 ```
 
-Enable and start it:
+Enable:
 
 ```bash
 sudo systemctl daemon-reload
@@ -197,21 +164,21 @@ sudo systemctl start mini-game-crossword
 sudo systemctl status mini-game-crossword
 ```
 
-View logs:
+Logs:
 
 ```bash
 journalctl -u mini-game-crossword -f
 ```
 
-## 12. Configure nginx
+## 10. Configure nginx
 
-Create the site file:
+Create:
 
 ```bash
 sudo nano /etc/nginx/sites-available/mini-game-crossword
 ```
 
-Example config:
+Example:
 
 ```nginx
 server {
@@ -230,12 +197,11 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
-        proxy_cache_bypass $http_upgrade;
     }
 }
 ```
 
-Enable and reload:
+Enable:
 
 ```bash
 sudo ln -s /etc/nginx/sites-available/mini-game-crossword /etc/nginx/sites-enabled/mini-game-crossword
@@ -244,7 +210,7 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-## 13. Enable HTTPS
+## 11. Enable HTTPS
 
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
@@ -252,15 +218,17 @@ sudo certbot --nginx -d example.com -d www.example.com
 sudo certbot renew --dry-run
 ```
 
-## 14. Verify deployment
+## 12. Post-deploy checks
 
-Check:
+Verify:
 
-- `https://example.com/`
-- `https://example.com/admin/login`
-- `https://example.com/api/health`
+- `/`
+- `/admin/login`
+- `/api/health`
+- one program viewer page
+- one program image upload
 
-Expected health response:
+Health response should show:
 
 ```json
 {
@@ -272,16 +240,7 @@ Expected health response:
 }
 ```
 
-If health is degraded:
-
-- confirm `DATABASE_URL` is correct
-- confirm the SQLite file path is writable
-- confirm Prisma migrations were applied
-- confirm `prisma.program.count()` can run
-
-## 15. Update procedure
-
-For later deployments:
+## 13. Update procedure
 
 ```bash
 cd /var/www/mini-game-crossword
@@ -291,55 +250,44 @@ npm exec prisma generate
 npm exec prisma migrate deploy
 npm run build
 sudo systemctl restart mini-game-crossword
-sudo systemctl status mini-game-crossword
 ```
 
-## 16. Backup recommendations
+## 14. Backup
 
-At minimum back up:
+Back up at least:
 
 - `data/app.db`
-- `.env.production`
 - `public/uploads/`
+- `data/uploads/`
+- `.env.production`
 
-SQLite backups are simple, but they matter because the database is local to the app server.
+## 15. Common issues
 
-## 17. Troubleshooting
+### SQLite readonly
 
-### App fails to start
+Fix ownership on app folder, DB file, and upload directories.
 
-Check:
-
-```bash
-journalctl -u mini-game-crossword -n 200
-cat /var/www/mini-game-crossword/.env.production
-```
-
-Common causes:
-
-- missing `DATABASE_URL`
-- missing `SESSION_SECRET`
-- SQLite file path not writable
-- Prisma migrations not deployed
-
-### Admin login works and then immediately redirects back to login
+### Admin login loops
 
 Check:
 
-- `SESSION_SECRET` is present and stable
-- system time is correct
-- cookies are not being stripped by the reverse proxy
+- `SESSION_SECRET`
+- reverse proxy headers
+- server time
 
 ### Uploads fail
 
 Check:
 
-- `public/uploads/` exists
-- service user can write into `public/uploads/`
-- file type and size match the upload validation rules
+- writable upload directories
+- 5 MB limit
+- PNG/JPEG/WebP only
 
-### Viewer updates feel slow
+### Viewer not updating
 
-Current architecture uses polling, not realtime subscriptions.
-That is expected.
-If you need lower-latency updates, the architecture will need a websocket or SSE layer instead of simply lowering the polling interval aggressively.
+Check:
+
+- `/api/viewer-snapshot`
+- browser network requests
+- program slug correctness
+- whether the current viewer page is polling every 10 seconds

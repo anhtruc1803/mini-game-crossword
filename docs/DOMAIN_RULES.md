@@ -4,146 +4,140 @@
 
 ### Program
 
-A program represents a show or event.
-It owns the public slug and can optionally point to a theme.
-A program can have multiple games over time, but admin pages work with the latest game for the selected program.
+Represents one event or show.
+
+- owns the public slug
+- may have a theme
+- may have multiple games over time
+- public viewer uses the latest game for the program
 
 ### Theme
 
-Theme stores branding and visual options such as colors and image URLs.
+Stores branding and color configuration.
 
 ### Game
 
-A game is the live crossword state machine attached to a program.
+Represents one crossword run for a program.
 
 ### CrosswordRow
 
-A row contains one clue, one answer, highlight indexes, and its own reveal state.
+Represents one clue, one answer, highlight indexes, and row status.
 
 ### GameEvent
 
-A game event is an audit log message describing an important state change.
+Represents an audit/timeline event for admin and viewer.
 
 ## Program status rules
 
-Valid values:
+Allowed values:
 
-```text
-draft | live | ended
-```
+- `draft`
+- `live`
+- `ended`
 
 Allowed transitions:
 
-```text
-draft -> live
-live -> ended
-ended -> draft
-```
+- `draft -> live`
+- `live -> ended`
+- `ended -> draft`
 
 Rules:
 
-- live programs cannot be deleted
-- program slug must be unique
-- `endAt` must be after `startAt` when both are present
+- slug must be unique
+- `endAt` must be after `startAt` when both are set
 
 ## Game status rules
 
-Valid values:
+Allowed values:
 
-```text
-draft | live | paused | ended
-```
+- `draft`
+- `live`
+- `paused`
+- `ended`
 
 Allowed transitions:
 
-```text
-draft -> live
-live -> paused
-live -> ended
-paused -> live
-paused -> ended
-ended -> draft
-```
+- `draft -> live`
+- `live -> paused`
+- `live -> ended`
+- `paused -> live`
+- `paused -> ended`
+- `ended -> draft`
 
 Rules:
 
-- a game cannot start unless it has at least one row
-- starting a game sets `totalRows` and sets `currentRowIndex` to `0`
-- ending a game does not auto-reveal remaining rows
-- resetting a game returns it to `draft`
+- game cannot start with zero rows
+- starting sets `totalRows`
+- starting sets `currentRowIndex` to `0`
+- reset clears announcement and row progress
 
 ## Row status rules
 
-Valid values:
+Allowed values:
 
-```text
-hidden | clue_visible | answer_revealed
-```
+- `hidden`
+- `clue_visible`
+- `answer_revealed`
 
 Allowed transitions:
 
-```text
-hidden -> clue_visible
-clue_visible -> answer_revealed
-answer_revealed -> hidden
-```
+- `hidden -> clue_visible`
+- `clue_visible -> answer_revealed`
+- `answer_revealed -> hidden`
 
 Rules:
 
-- clue reveal is only valid while the game is `live`
-- answer reveal is only valid while the game is `live`
-- the current active row is selected by `game.currentRowIndex`
-- rows do not skip directly from `hidden` to `answer_revealed`
+- clue reveal only when game is `live`
+- answer reveal only when game is `live`
+- no direct jump from `hidden` to `answer_revealed`
 
 ## Row editing rules
 
-- rows cannot be created, updated, or deleted while the game is `live`
-- a game can contain at most `APP_CONFIG.maxRows`
-- `rowOrder` is assigned sequentially on creation
-- deleting a row resequences the remaining row order values
-- highlighted indexes must be inside the answer length
-- answers are normalized to uppercase by validation
+- rows cannot be created, updated, or deleted while game is `live`
+- max rows is `APP_CONFIG.maxRows`
+- row order is assigned sequentially
+- deleting a row resequences remaining rows
+- highlight indexes must fit inside answer length
 
 ## Announcement rules
 
-- announcement text can only be updated while the game is `live` or `paused`
-- blank announcement input is normalized to `null`
+- can be updated only while game is `live` or `paused`
+- blank text is normalized to `null`
 
-## Reset rules
+## Advance / rewind rules
 
-When a game is reset:
+### Advance
 
-1. game status becomes `draft`
-2. `currentRowIndex` becomes `null`
-3. `announcementText` becomes `null`
-4. all rows return to `hidden`
-5. a `game_reset` event is logged
+- only while game is `live`
+- increments `currentRowIndex`
+- cannot advance past last row
 
-## Advance rules
+### Rewind
 
-- advancing the row is only valid while the game is `live`
-- advancing increases `currentRowIndex` by one
-- advancing past the last row is not allowed
+- only while game is `live` or `paused`
+- only allowed when the newly selected row is still unopened
+- intended for accidental next-step correction
 
-## Public viewer rules
+## Viewer rules
 
-The public viewer receives a sanitized snapshot.
+Public viewer snapshots must:
 
-- unrevealed answers are not sent to the client
-- the final keyword is not sent until the game is ended
-- revealed answers remain visible to late viewers
-- clue-visible rows show the clue, but not the answer
-- recent events are visible in the public snapshot
+- never expose hidden answers
+- never expose final keyword before game end
+- show clue text when row is `clue_visible`
+- show answer text only when row is `answer_revealed`
+- include recent events and announcement
 
-These are server-side guarantees, not just UI behavior.
+## Keyword hint rules
 
-## Late viewer rule
+- final keyword hint is derived from revealed answers only
+- full final keyword is shown only after game end
 
-A viewer who joins mid-game should still see the current truth:
+## Operator expectation
 
-- current game status
-- current row highlight
-- revealed answers
-- opened clues
-- recent event log
-- final keyword hint cells derived from revealed rows only
+A late viewer should still see the current truth:
+
+- current row
+- currently revealed rows
+- recent updates
+- keyword progress

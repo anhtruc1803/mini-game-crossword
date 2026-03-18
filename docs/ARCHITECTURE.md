@@ -1,175 +1,169 @@
 # Architecture
 
-## High-level overview
+## Overview
 
 ```text
 Next.js App
   |- Public viewer routes
   |- Admin routes
   |- API routes
+  |- Media route
   |
-  |- Features layer
+  |- features/
   |    |- admin
+  |    |- assets
+  |    |- games
   |    |- programs
   |    |- themes
-  |    |- games
   |    |- viewer
-  |    |- assets
   |
-  |- Infrastructure layer
-       |- Prisma client
-       |- signed session helpers
-       |- rate limiting
-       |- route constants
-       |- shared utilities
+  |- lib/
+       |- auth
+       |- db
+       |- security
+       |- i18n
+       |- constants
 
 Persistence
   |- SQLite via Prisma
-  |- local filesystem asset storage
+  |- local filesystem uploads
 ```
 
-## Route structure
+## Route map
 
 - `/`
-  Landing page.
+  Landing page
 - `/{programSlug}`
-  Public viewer page.
+  Public viewer
 - `/admin/login`
-  Admin sign-in page.
+  Admin sign-in
 - `/admin/programs`
-  Program list.
+  Program list
 - `/admin/programs/new`
-  Program creation page.
+  Program creation
 - `/admin/programs/{programId}`
-  Program detail page.
-- `/admin/programs/{programId}/game`
-  Game control page.
+  Program detail
 - `/admin/programs/{programId}/rows`
-  Row management page.
+  Row management
+- `/admin/programs/{programId}/game`
+  Game control
 - `/admin/programs/{programId}/theme`
-  Theme page.
-- `/api/health`
-  Health check.
+  Theme management
 - `/api/viewer-snapshot`
-  Public polling endpoint for viewer state.
+  Public polling endpoint
+- `/api/health`
+  Health endpoint
+- `/media/{bucket}/{path}`
+  Local file serving route
 
-## Layering rules
+## Layering
 
-The intended dependency direction is:
+Dependency direction:
 
 ```text
 app -> features -> lib
 ```
 
-Feature modules can depend on `lib/`, but `lib/` should not depend on feature modules unless the abstraction is intentionally shared.
+## Feature module shape
 
-## Feature module pattern
-
-Each feature folder is organized around one domain:
+Typical pattern:
 
 - `types.ts`
-  Domain-facing TypeScript types.
 - `schemas.ts`
-  Input validation rules.
 - `mapper.ts`
-  Prisma row to domain mapping.
 - `queries.ts`
-  Read-only data access.
 - `mutations.ts`
-  Write-only data access.
 - `service.ts`
-  Business rules and orchestration.
 
-Not every feature has every file, but this is the default shape.
+`service.ts` is the business-logic boundary.
 
-## Auth architecture
+## Admin auth architecture
 
-Admin auth is custom and local to this app.
+### Sign-in
 
-### Sign-in flow
+1. Login form posts credentials
+2. `features/admin/auth.ts` validates input
+3. Credentials are checked against `admin_users`
+4. `lib/auth/session-token.ts` signs a stateless token
+5. `lib/auth/session.ts` stores it in an HTTP-only cookie
 
-1. User submits credentials on `/admin/login`.
-2. `features/admin/auth.ts` validates input and rate limits attempts.
-3. Credentials are checked against `admin_users` in SQLite.
-4. A signed cookie token is created in `lib/auth/session-token.ts`.
-5. `lib/auth/session.ts` stores the token as an HTTP-only cookie.
+### Protection layers
 
-### Request protection
-
-- `proxy.ts` rejects invalid or missing cookies before protected admin routes.
-- `app/admin/programs/layout.tsx` performs a server-side admin check for all `/admin/programs/*` pages.
-- Server actions call `requireAdmin()` again before mutating data.
-
-This is deliberate defense in depth.
+- `proxy.ts` blocks missing or invalid cookies
+- `app/admin/programs/layout.tsx` protects server rendering
+- server actions call `requireAdmin()` again
 
 ## Viewer architecture
 
-The public viewer is snapshot-based.
+### Initial render
 
-### Initial load
+1. `app/(public)/[programSlug]/page.tsx` loads a snapshot
+2. `features/viewer/queries.ts` sanitizes game data
+3. Viewer renders hero, question slider, board, keyword hint, and updates
 
-1. `app/(public)/[programSlug]/page.tsx` loads a server-side snapshot.
-2. `features/viewer/queries.ts` builds a sanitized public view model.
-3. The page renders theme, game state, rows, and recent events.
+### Live refresh
 
-### Live updates
+1. `features/viewer/hooks.ts` polls `/api/viewer-snapshot`
+2. server returns a complete sanitized snapshot
+3. client replaces the previous snapshot
 
-1. `features/viewer/hooks.ts` polls `/api/viewer-snapshot`.
-2. `/api/viewer-snapshot` validates and rate limits requests.
-3. `features/viewer/queries.ts` returns a sanitized snapshot again.
-4. Client state replaces the previous snapshot.
+The viewer is intentionally whole-snapshot based.
 
-There is no optimistic merge reducer anymore.
-The viewer uses whole-snapshot replacement.
+## Public data protection
 
-## Data protection model
+Public viewer snapshots:
 
-The public snapshot intentionally strips sensitive state.
+- hide unrevealed answers
+- hide final keyword until game end
+- expose only the viewer-facing game model
 
-- Unrevealed row answers are returned as `null`.
-- The final keyword is only returned once the game is ended.
-- Admin-only data is never fetched from the public route tree.
+This is server-side, not UI-only.
 
-This server-side sanitization is a key part of the architecture.
-
-## Persistence model
+## Persistence
 
 ### Database
 
-- Prisma client: `lib/db/prisma.ts`
-- Schema: `prisma/schema.prisma`
-- Default database: SQLite file
-
-SQLite is appropriate for a single Ubuntu server deployment and low-to-moderate write volume.
-If the project grows into a multi-instance deployment, the first major architectural migration should be moving Prisma to PostgreSQL.
+- Prisma client in `lib/db/prisma.ts`
+- SQLite database from `DATABASE_URL`
+- schema in `prisma/schema.prisma`
 
 ### Assets
 
-- Upload handling: `features/assets/upload.ts`
-- Asset paths: `features/assets/paths.ts`
-- Asset service: `features/assets/service.ts`
-
-Assets are stored on local disk under `public/uploads/...`.
-That means they are publicly reachable once saved.
+- uploads validated in `features/assets/upload.ts`
+- files stored under `public/uploads` and mirrored into `data/uploads`
+- URLs served from `/media/...`
 
 ## Rate limiting
 
-Rate limiting lives in `lib/security/rate-limit.ts`.
+`lib/security/rate-limit.ts` covers:
 
-- Auth attempts are rate limited by IP and email.
-- Admin mutations are rate limited by admin ID and IP.
-- Viewer snapshot polling is rate limited by IP and slug.
+- admin sign-in
+- admin mutations
+- viewer snapshot polling
 
-If Upstash Redis env vars are present, the app uses Redis-backed counters.
-Otherwise it falls back to in-memory counters.
+Backends:
 
-## Operational assumptions
+- Upstash Redis if configured
+- in-memory fallback otherwise
 
-The current codebase assumes:
+## Frontend design system
 
-- a single app instance is acceptable
-- viewer updates are polling-based
-- local filesystem writes are allowed
-- SQLite file access is local to the app process
+Current frontend direction:
 
-Those assumptions should stay documented because they drive many implementation choices in the repo.
+- Birthday Glass visual language
+- iNET branding accents
+- dark / light mode
+- subtle live badge pulse
+- soft hover aura
+- birthday balloons, sparkles, and periodic confetti during live celebratory sessions
+
+## Current deployment assumption
+
+The codebase is optimized for:
+
+- one Ubuntu server
+- one app process
+- local writable disk
+- SQLite
+
+If the project grows beyond that, the next architectural move should be PostgreSQL plus shared object storage.

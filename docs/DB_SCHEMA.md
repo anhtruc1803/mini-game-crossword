@@ -1,177 +1,188 @@
 # Database Schema
 
-The database source of truth is `prisma/schema.prisma`.
-This document summarizes the current schema in domain language.
+Source of truth:
 
-## Engine
+- `prisma/schema.prisma`
 
-- ORM: Prisma
-- Database: SQLite
-- Connection string source: `DATABASE_URL`
+Current database engine:
 
-The default local pattern is:
+- SQLite via Prisma
+
+Typical production URL:
 
 ```dotenv
 DATABASE_URL="file:../data/app.db"
 ```
 
-Because the Prisma schema lives in `prisma/`, the `../data/app.db` path resolves to `data/app.db` at the project root.
-
 ## Models
 
-### admin_users
+### `admin_users`
 
-Stores local admin accounts for the custom sign-in flow.
+Stores local admin accounts.
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `id` | `String` | primary key, UUID |
-| `email` | `String` | unique |
-| `username` | `String?` | unique, optional |
-| `password_hash` | `String` | bcrypt hash |
-| `full_name` | `String?` | optional |
-| `role` | `String` | currently expected to be `admin` |
-| `is_active` | `Boolean` | soft-disable flag |
-| `created_at` | `DateTime` | default now |
-| `updated_at` | `DateTime` | auto-updated |
+Key fields:
 
-### themes
+- `id`
+- `email`
+- `username`
+- `password_hash`
+- `full_name`
+- `role`
+- `is_active`
+- `created_at`
+- `updated_at`
 
-Theme and branding configuration for a program.
+Notes:
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `id` | `String` | primary key, UUID |
-| `name` | `String` | required |
-| `logo_url` | `String?` | optional |
-| `banner_url` | `String?` | optional |
-| `desktop_bg_url` | `String?` | optional |
-| `mobile_bg_url` | `String?` | optional |
-| `primary_color` | `String` | hex color |
-| `secondary_color` | `String` | hex color |
-| `accent_color` | `String` | hex color |
-| `overlay_opacity` | `Float` | 0 to 1 |
-| `font_heading` | `String?` | optional |
-| `font_body` | `String?` | optional |
-| `custom_css_json` | `String?` | JSON string, optional |
-| `created_at` | `DateTime` | default now |
-| `updated_at` | `DateTime` | auto-updated |
+- `email` is unique
+- `username` is unique when present
+- active admin check is enforced at runtime
 
-### programs
+### `themes`
 
-Top-level event or show container.
+Stores theme and branding settings.
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `id` | `String` | primary key, UUID |
-| `slug` | `String` | unique, used in public URL |
-| `title` | `String` | required |
-| `description` | `String?` | optional |
-| `status` | `String` | `draft`, `live`, `ended` |
-| `start_at` | `DateTime?` | optional |
-| `end_at` | `DateTime?` | optional |
-| `theme_id` | `String?` | nullable FK to `themes` |
-| `created_at` | `DateTime` | default now |
-| `updated_at` | `DateTime` | auto-updated |
+Key fields:
 
-Relations:
+- `name`
+- `logo_url`
+- `banner_url`
+- `desktop_bg_url`
+- `mobile_bg_url`
+- `primary_color`
+- `secondary_color`
+- `accent_color`
+- `overlay_opacity`
+- `font_heading`
+- `font_body`
+- `custom_css_json`
 
-- one program optionally has one active linked theme
-- one program can have many games
+### `programs`
 
-### games
+Top-level livestream or event container.
 
-Crossword game state attached to a program.
+Key fields:
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `id` | `String` | primary key, UUID |
-| `program_id` | `String` | FK to `programs` |
-| `title` | `String` | required |
-| `subtitle` | `String?` | optional |
-| `final_keyword` | `String?` | optional |
-| `total_rows` | `Int` | cached row count |
-| `current_row_index` | `Int?` | nullable active pointer |
-| `game_status` | `String` | `draft`, `live`, `paused`, `ended` |
-| `announcement_text` | `String?` | optional |
-| `created_at` | `DateTime` | default now |
-| `updated_at` | `DateTime` | auto-updated |
+- `slug`
+- `title`
+- `description`
+- `image_url`
+- `status`
+- `start_at`
+- `end_at`
+- `theme_id`
 
 Relations:
 
-- one game belongs to one program
-- one game has many crossword rows
-- one game has many game events
+- belongs to zero or one theme
+- owns many games
 
-### crossword_rows
+### `games`
 
-Question and answer rows for a game board.
+Crossword game instance attached to a program.
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `id` | `String` | primary key, UUID |
-| `game_id` | `String` | FK to `games` |
-| `row_order` | `Int` | 0-based row order |
-| `clue_text` | `String` | required |
-| `answer_text` | `String` | required, uppercase via validation |
-| `answer_length` | `Int` | cached answer length |
-| `highlighted_indexes_json` | `String` | JSON array of indexes |
-| `row_status` | `String` | `hidden`, `clue_visible`, `answer_revealed` |
-| `note_text` | `String?` | admin note |
-| `created_at` | `DateTime` | default now |
-| `updated_at` | `DateTime` | auto-updated |
+Key fields:
+
+- `program_id`
+- `title`
+- `subtitle`
+- `final_keyword`
+- `total_rows`
+- `current_row_index`
+- `game_status`
+- `announcement_text`
+
+Relations:
+
+- belongs to one program
+- has many rows
+- has many game events
+
+### `crossword_rows`
+
+One clue + one answer line in a crossword game.
+
+Key fields:
+
+- `game_id`
+- `row_order`
+- `clue_text`
+- `answer_text`
+- `answer_length`
+- `highlighted_indexes_json`
+- `row_status`
+- `note_text`
 
 Important constraint:
 
 - unique `(game_id, row_order)`
 
-### game_events
+### `game_events`
 
-Human-readable audit trail for game actions.
+Audit trail and viewer timeline.
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `id` | `String` | primary key, UUID |
-| `game_id` | `String` | FK to `games` |
-| `event_type` | `String` | see `EVENT_TYPES` |
-| `message` | `String` | display-ready event text |
-| `payload_json` | `String?` | optional JSON string |
-| `created_at` | `DateTime` | default now |
-| `created_by` | `String?` | optional actor ID |
+Key fields:
 
-## Constraints and relationships
+- `game_id`
+- `event_type`
+- `message`
+- `payload_json`
+- `created_at`
+- `created_by`
 
-- `programs.slug` is unique
-- `admin_users.email` is unique
-- `admin_users.username` is unique when present
-- `crossword_rows(game_id, row_order)` is unique
-- deleting a program cascades to its games
-- deleting a game cascades to its rows and events
-- deleting a theme sets `program.theme_id` to `null`
+## Status values
 
-## Session storage note
+### Program status
 
-There is no `sessions` table.
-Admin sessions are stateless signed cookies verified from `SESSION_SECRET`.
+- `draft`
+- `live`
+- `ended`
 
-That means:
+### Game status
 
-- session invalidation mainly happens by deleting the cookie
-- admin authorization is still checked against `admin_users` on the server
-- disabling an admin user in the database still blocks protected actions and pages
+- `draft`
+- `live`
+- `paused`
+- `ended`
+
+### Row status
+
+- `hidden`
+- `clue_visible`
+- `answer_revealed`
+
+## Session note
+
+There is no sessions table.
+
+Admin sessions are:
+
+- signed
+- stateless
+- stored in cookies
+- verified against `SESSION_SECRET`
 
 ## Migration workflow
 
-Schema changes should use Prisma migrations.
-
-Typical flow:
+Local development:
 
 ```bash
 npm exec prisma migrate dev --name your_change_name
 ```
 
-Production deploy flow:
+Production:
 
 ```bash
 npm exec prisma migrate deploy
 ```
+
+## Schema update checklist
+
+When schema changes:
+
+1. update Prisma schema
+2. add migration
+3. update feature types
+4. update mappers and validation
+5. update docs
+6. run lint, tests, and build

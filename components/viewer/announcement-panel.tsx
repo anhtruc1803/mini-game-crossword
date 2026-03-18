@@ -41,26 +41,24 @@ function formatEventMessage(
         ? payload.rowIndex + 1
         : null;
   const answer = typeof payload.answer === "string" ? payload.answer : null;
+  const text = typeof payload.text === "string" ? payload.text : null;
+  const isVi = locale === "vi";
 
   switch (event.eventType) {
     case "clue_opened":
-      return rowOrder
-        ? locale === "vi"
-          ? `Câu ${rowOrder} đã mở`
-          : `Question ${rowOrder} opened`
-        : t.viewer.eventClueOpened;
+      if (rowOrder) return isVi ? `Câu ${rowOrder} đã mở` : `Question ${rowOrder} opened`;
+      return t.viewer.eventClueOpened;
     case "answer_revealed":
-      return rowOrder && answer
-        ? locale === "vi"
-          ? `Đáp án câu ${rowOrder}: ${answer}`
-          : `Answer for question ${rowOrder}: ${answer}`
-        : event.message;
+      if (rowOrder && answer) {
+        return isVi ? `Đáp án câu ${rowOrder}: ${answer}` : `Answer for question ${rowOrder}: ${answer}`;
+      }
+      return event.message;
     case "row_advanced":
-      return rowOrder
-        ? locale === "vi"
-          ? `Chuyển sang câu ${rowOrder}`
-          : `Moved to question ${rowOrder}`
-        : t.viewer.eventRowAdvanced;
+      if (rowOrder) return isVi ? `Chuyển sang câu ${rowOrder}` : `Moved to question ${rowOrder}`;
+      return t.viewer.eventRowAdvanced;
+    case "announcement_updated":
+      if (text?.trim()) return isVi ? `Thông báo: ${text}` : `Announcement: ${text}`;
+      return isVi ? "Đã xóa thông báo" : "Announcement removed";
     default:
       return event.message;
   }

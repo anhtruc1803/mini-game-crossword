@@ -38,7 +38,7 @@ export default async function ViewerPage({ params }: ViewerPageProps) {
   return (
     <main className="relative min-h-screen overflow-hidden" style={themeStyle}>
       <CursorAura />
-      <BirthdayEffects enabled={isBirthdayProgram} />
+      <BirthdayEffects enabled={isBirthdayProgram || snapshot.game?.gameStatus === "live"} />
 
       {theme?.desktopBgUrl && (
         <div
