@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { GameQuickCreate } from "@/components/admin/game-quick-create";
 import { ProgramForm } from "@/components/admin/program-form";
 import { ProgramStatusControl } from "@/components/admin/program-status-control";
@@ -15,17 +15,15 @@ import { useTranslation } from "@/lib/i18n";
 interface ProgramDetailClientProps {
   program: Program;
   game: Game | null;
+  viewerOrigin: string | null;
 }
 
-export function ProgramDetailClient({ program, game }: ProgramDetailClientProps) {
+export function ProgramDetailClient({ program, game, viewerOrigin }: ProgramDetailClientProps) {
   const { t } = useTranslation();
   const programId = program.id;
   const viewerPath = ROUTES.viewer(program.slug);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
-  const viewerUrl = useMemo(() => {
-    if (typeof window === "undefined") return viewerPath;
-    return `${window.location.origin}${viewerPath}`;
-  }, [viewerPath]);
+  const viewerUrl = viewerOrigin ? `${viewerOrigin}${viewerPath}` : viewerPath;
 
   async function handleCopyViewerLink() {
     try {
