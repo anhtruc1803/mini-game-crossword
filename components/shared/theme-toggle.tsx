@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { flushSync } from "react-dom";
+import { useTranslation } from "@/lib/i18n";
 
 type ThemeMode = "dark" | "light";
 
@@ -61,7 +62,7 @@ function runCircularReveal(nextTheme: ThemeMode, x: number, y: number, onApply: 
           ],
         },
         {
-          duration: 750,
+          duration: 1150,
           easing: "cubic-bezier(0.22, 1, 0.36, 1)",
           fill: "both",
           pseudoElement: "::view-transition-new(root)",
@@ -74,6 +75,7 @@ function runCircularReveal(nextTheme: ThemeMode, x: number, y: number, onApply: 
 }
 
 export function ThemeToggle({ className = "" }: { className?: string }) {
+  const { locale } = useTranslation();
   const [theme, setTheme] = useState<ThemeMode>(getStoredTheme);
 
   useEffect(() => {
@@ -91,31 +93,48 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
     });
   }
 
+  const labels =
+    locale === "vi"
+      ? {
+          dark: "Tối",
+          light: "Sáng",
+          switchToLight: "Chuyển sang giao diện sáng",
+          switchToDark: "Chuyển sang giao diện tối",
+        }
+      : {
+          dark: "Dark",
+          light: "Light",
+          switchToLight: "Switch to light mode",
+          switchToDark: "Switch to dark mode",
+        };
+
+  const isLight = theme === "light";
+
   return (
     <button
       type="button"
       onClick={toggleTheme}
-      className={`glass-pill inline-flex items-center gap-1 rounded-full p-1 text-xs font-medium text-white/85 transition hover:bg-white/12 ${className}`}
-      title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-      aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+      className={`glass-pill inline-flex items-center gap-1 rounded-full p-1 text-xs font-medium transition hover:bg-white/12 ${isLight ? "text-slate-700" : "text-white/85"} ${className}`}
+      title={theme === "dark" ? labels.switchToLight : labels.switchToDark}
+      aria-label={theme === "dark" ? labels.switchToLight : labels.switchToDark}
     >
       <span
         className={
           theme === "dark"
             ? "rounded-full bg-white/16 px-3 py-1.5 font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
-            : "rounded-full px-3 py-1.5 text-white/55"
+            : "rounded-full px-3 py-1.5 text-slate-500"
         }
       >
-        Dark
+        {labels.dark}
       </span>
       <span
         className={
           theme === "light"
-            ? "rounded-full bg-white/16 px-3 py-1.5 font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+            ? "rounded-full bg-white/65 px-3 py-1.5 font-semibold text-slate-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.65),0_8px_20px_rgba(148,163,184,0.2)]"
             : "rounded-full px-3 py-1.5 text-white/55"
         }
       >
-        Light
+        {labels.light}
       </span>
     </button>
   );
