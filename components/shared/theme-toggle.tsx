@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 
 type ThemeMode = "dark" | "light";
+
+type ViewTransitionLike = {
+  ready: Promise<void>;
+};
 
 const STORAGE_KEY = "mini-game-theme";
 
@@ -10,21 +15,80 @@ function applyTheme(theme: ThemeMode) {
   document.documentElement.dataset.theme = theme;
 }
 
-export function ThemeToggle({ className = "" }: { className?: string }) {
-  const [theme, setTheme] = useState<ThemeMode>(() => {
-    if (typeof window === "undefined") return "dark";
-    return window.localStorage.getItem(STORAGE_KEY) === "light" ? "light" : "dark";
+function getStoredTheme(): ThemeMode {
+  if (typeof window === "undefined") return "dark";
+  return window.localStorage.getItem(STORAGE_KEY) === "light" ? "light" : "dark";
+}
+
+function getRevealOrigin(target: HTMLButtonElement, clientX: number, clientY: number) {
+  if (clientX > 0 || clientY > 0) {
+    return { x: clientX, y: clientY };
+  }
+
+  const rect = target.getBoundingClientRect();
+  return {
+    x: rect.left + rect.width / 2,
+    y: rect.top + rect.height / 2,
+  };
+}
+
+function runCircularReveal(nextTheme: ThemeMode, x: number, y: number, onApply: () => void) {
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const documentWithTransition = document as Document & {
+    startViewTransition?: (callback: () => void | Promise<void>) => ViewTransitionLike;
+  };
+
+  if (!documentWithTransition.startViewTransition || prefersReducedMotion) {
+    onApply();
+    return;
+  }
+
+  const transition = documentWithTransition.startViewTransition(() => {
+    flushSync(onApply);
   });
+
+  transition.ready
+    .then(() => {
+      const maxX = Math.max(x, window.innerWidth - x);
+      const maxY = Math.max(y, window.innerHeight - y);
+      const endRadius = Math.hypot(maxX, maxY);
+
+      document.documentElement.animate(
+        {
+          clipPath: [
+            `circle(0px at ${x}px ${y}px)`,
+            `circle(${endRadius}px at ${x}px ${y}px)`,
+          ],
+        },
+        {
+          duration: 750,
+          easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+          fill: "both",
+          pseudoElement: "::view-transition-new(root)",
+        }
+      );
+    })
+    .catch(() => {
+      onApply();
+    });
+}
+
+export function ThemeToggle({ className = "" }: { className?: string }) {
+  const [theme, setTheme] = useState<ThemeMode>(getStoredTheme);
 
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
 
-  function toggleTheme() {
+  function toggleTheme(event: React.MouseEvent<HTMLButtonElement>) {
     const nextTheme: ThemeMode = theme === "dark" ? "light" : "dark";
-    setTheme(nextTheme);
-    window.localStorage.setItem(STORAGE_KEY, nextTheme);
-    applyTheme(nextTheme);
+    const origin = getRevealOrigin(event.currentTarget, event.clientX, event.clientY);
+
+    runCircularReveal(nextTheme, origin.x, origin.y, () => {
+      setTheme(nextTheme);
+      window.localStorage.setItem(STORAGE_KEY, nextTheme);
+      applyTheme(nextTheme);
+    });
   }
 
   return (
