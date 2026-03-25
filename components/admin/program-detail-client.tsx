@@ -4,9 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { GameQuickCreate } from "@/components/admin/game-quick-create";
+import { ProgramAnalyticsPanel } from "@/components/admin/program-analytics-panel";
 import { ProgramForm } from "@/components/admin/program-form";
 import { ProgramStatusControl } from "@/components/admin/program-status-control";
 import { SectionCard } from "@/components/shared/section-card";
+import type { ProgramAnalyticsSummary } from "@/features/analytics/types";
 import type { Game } from "@/features/games/types";
 import type { Program } from "@/features/programs/types";
 import { ROUTES } from "@/lib/constants/routes";
@@ -15,10 +17,16 @@ import { useTranslation } from "@/lib/i18n";
 interface ProgramDetailClientProps {
   program: Program;
   game: Game | null;
+  analytics: ProgramAnalyticsSummary;
   viewerOrigin: string | null;
 }
 
-export function ProgramDetailClient({ program, game, viewerOrigin }: ProgramDetailClientProps) {
+export function ProgramDetailClient({
+  program,
+  game,
+  analytics,
+  viewerOrigin,
+}: ProgramDetailClientProps) {
   const { t } = useTranslation();
   const programId = program.id;
   const viewerPath = ROUTES.viewer(program.slug);
@@ -183,6 +191,10 @@ export function ProgramDetailClient({ program, game, viewerOrigin }: ProgramDeta
                 )}
               </div>
             </div>
+          </SectionCard>
+
+          <SectionCard>
+            <ProgramAnalyticsPanel analytics={analytics} />
           </SectionCard>
         </div>
       </div>

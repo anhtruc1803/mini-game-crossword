@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { getProgramById } from "@/features/programs/queries";
 import { getGameByProgramId } from "@/features/games/queries";
+import { getProgramAnalytics } from "@/features/analytics/queries";
 import { ProgramDetailClient } from "@/components/admin/program-detail-client";
 
 interface ProgramDetailPageProps {
@@ -13,7 +14,10 @@ export default async function ProgramDetailPage({ params }: ProgramDetailPagePro
   const program = await getProgramById(programId);
   if (!program) notFound();
 
-  const game = await getGameByProgramId(programId);
+  const [game, analytics] = await Promise.all([
+    getGameByProgramId(programId),
+    getProgramAnalytics(programId),
+  ]);
   const requestHeaders = await headers();
   const forwardedHost = requestHeaders.get("x-forwarded-host");
   const host = (forwardedHost ?? requestHeaders.get("host") ?? "").split(",")[0]?.trim();
@@ -23,5 +27,12 @@ export default async function ProgramDetailPage({ params }: ProgramDetailPagePro
     ?.trim();
   const viewerOrigin = host ? `${protocol}://${host}` : null;
 
-  return <ProgramDetailClient program={program} game={game} viewerOrigin={viewerOrigin} />;
+  return (
+    <ProgramDetailClient
+      program={program}
+      game={game}
+      analytics={analytics}
+      viewerOrigin={viewerOrigin}
+    />
+  );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { GAME_STATUS } from "@/features/games/constants";
+import { useViewerAnalytics } from "@/features/viewer/analytics";
 import { useGameRealtime } from "@/features/viewer/hooks";
 import type { PublicViewerSnapshot } from "@/features/viewer/view-model";
 import { useTranslation } from "@/lib/i18n";
@@ -18,6 +19,7 @@ export function ViewerRealtimeWrapper({
   initialSnapshot,
 }: ViewerRealtimeWrapperProps) {
   const snapshot = useGameRealtime(initialSnapshot);
+  useViewerAnalytics(snapshot.program.slug);
   const { game, rows, activeRowIndex, events, finalKeywordHint, finalKeyword } = snapshot;
   const { t } = useTranslation();
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(activeRowIndex);

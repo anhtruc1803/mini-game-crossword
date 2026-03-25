@@ -2,13 +2,22 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ROUTES } from "@/lib/constants/routes";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ROUTES } from "@/lib/constants/routes";
 import { useTranslation } from "@/lib/i18n";
+import type { ProgramAnalyticsSummary } from "@/features/analytics/types";
 import type { Program } from "@/features/programs/types";
 
-export function ProgramsListClient({ programs }: { programs: Program[] }) {
-  const { t } = useTranslation();
+interface ProgramsListClientProps {
+  programs: Program[];
+  analyticsByProgramId: Record<string, ProgramAnalyticsSummary>;
+}
+
+export function ProgramsListClient({
+  programs,
+  analyticsByProgramId,
+}: ProgramsListClientProps) {
+  const { t, locale } = useTranslation();
 
   const statusLabels: Record<string, { label: string; tone: string }> = {
     draft: { label: t.status.draft, tone: "bg-white/8 text-white/72" },
@@ -16,16 +25,35 @@ export function ProgramsListClient({ programs }: { programs: Program[] }) {
     ended: { label: t.status.ended, tone: "bg-rose-400/16 text-rose-300" },
   };
 
+  const labels =
+    locale === "vi"
+      ? {
+          headingTag: "Admin",
+          subtitle:
+            "Quản lý chương trình, hình ảnh, game và theo dõi lượng người xem trên cùng một giao diện.",
+          noDescription: "Chưa có mô tả cho chương trình này.",
+          online: "Online",
+          viewers: "Người xem",
+          pageViews: "Lượt xem",
+        }
+      : {
+          headingTag: "Admin",
+          subtitle:
+            "Manage programs, artwork, game flow, and viewer activity from one place.",
+          noDescription: "No description for this program yet.",
+          online: "Online",
+          viewers: "Viewers",
+          pageViews: "Pageviews",
+        };
+
   return (
     <div className="space-y-6">
       <div className="glass-panel rounded-[28px] p-5 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-white/45">Admin</p>
+            <p className="text-xs uppercase tracking-[0.24em] text-white/45">{labels.headingTag}</p>
             <h2 className="mt-2 text-2xl font-bold text-white">{t.admin.programsList}</h2>
-            <p className="mt-2 text-sm text-white/60">
-              Quản lý các chương trình, hình ảnh, game và luồng điều khiển trên cùng một giao diện.
-            </p>
+            <p className="mt-2 text-sm text-white/60">{labels.subtitle}</p>
           </div>
 
           <Link
@@ -56,6 +84,8 @@ export function ProgramsListClient({ programs }: { programs: Program[] }) {
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {programs.map((program) => {
             const status = statusLabels[program.status] ?? statusLabels.draft;
+            const analytics = analyticsByProgramId[program.id];
+
             return (
               <Link
                 key={program.id}
@@ -64,12 +94,7 @@ export function ProgramsListClient({ programs }: { programs: Program[] }) {
               >
                 <div className="relative aspect-[16/10] w-full bg-[var(--muted)]">
                   {program.imageUrl ? (
-                    <Image
-                      src={program.imageUrl}
-                      alt={program.title}
-                      fill
-                      className="object-cover"
-                    />
+                    <Image src={program.imageUrl} alt={program.title} fill className="object-cover" />
                   ) : (
                     <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.18),transparent_40%),linear-gradient(160deg,rgba(15,23,42,0.96),rgba(12,18,34,0.82))] text-4xl font-black text-white/70">
                       {program.title.slice(0, 2).toUpperCase()}
@@ -90,8 +115,37 @@ export function ProgramsListClient({ programs }: { programs: Program[] }) {
                   </div>
 
                   <p className="line-clamp-2 min-h-[3rem] text-sm leading-6 text-white/62">
-                    {program.description ?? "Chưa có mô tả cho chương trình này."}
+                    {program.description ?? labels.noDescription}
                   </p>
+
+                  <div className="grid grid-cols-3 gap-2 border-t border-white/8 pt-3">
+                    <div className="glass-panel-soft rounded-2xl p-3">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-white/40">
+                        {labels.online}
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-emerald-300">
+                        {analytics?.onlineViewers ?? 0}
+                      </p>
+                    </div>
+
+                    <div className="glass-panel-soft rounded-2xl p-3">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-white/40">
+                        {labels.viewers}
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-white">
+                        {analytics?.totalViewers ?? 0}
+                      </p>
+                    </div>
+
+                    <div className="glass-panel-soft rounded-2xl p-3">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-white/40">
+                        {labels.pageViews}
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-sky-300">
+                        {analytics?.totalPageViews ?? 0}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </Link>
             );

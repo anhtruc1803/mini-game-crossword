@@ -63,6 +63,7 @@ model Program {
   themeId     String?   @map("theme_id")
   theme       Theme?    @relation(fields: [themeId], references: [id], onDelete: SetNull)
   games       Game[]
+  viewerSessions ViewerSession[]
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
@@ -125,4 +126,22 @@ model GameEvent {
 
   @@index([gameId, createdAt])
   @@map("game_events")
+}
+
+model ViewerSession {
+  id         String   @id @default(uuid())
+  programId  String   @map("program_id")
+  program    Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  sessionId  String   @map("session_id")
+  pageViews  Int      @default(1) @map("page_views")
+  lastPath   String?  @map("last_path")
+  userAgent  String?  @map("user_agent")
+  ipHash     String?  @map("ip_hash")
+  firstSeenAt DateTime @default(now()) @map("first_seen_at")
+  lastSeenAt DateTime @default(now()) @map("last_seen_at")
+
+  @@unique([programId, sessionId])
+  @@index([programId, lastSeenAt])
+  @@index([programId, firstSeenAt])
+  @@map("viewer_sessions")
 }
