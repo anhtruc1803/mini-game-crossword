@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { EmptyState } from "@/components/shared/empty-state";
+import { MiniTrafficChart } from "@/components/admin/mini-traffic-chart";
 import { ROUTES } from "@/lib/constants/routes";
 import { useTranslation } from "@/lib/i18n";
 import type { ProgramAnalyticsSummary } from "@/features/analytics/types";
@@ -30,11 +31,12 @@ export function ProgramsListClient({
       ? {
           headingTag: "Admin",
           subtitle:
-            "Quản lý chương trình, hình ảnh, game và theo dõi lượng người xem trên cùng một giao diện.",
-          noDescription: "Chưa có mô tả cho chương trình này.",
+            "Qu?n lý chuong trình, hình ?nh, game và theo dõi lu?ng ngu?i xem trên cùng m?t giao di?n.",
+          noDescription: "Chua có mô t? cho chuong trình này.",
           online: "Online",
-          viewers: "Người xem",
-          pageViews: "Lượt xem",
+          viewers: "Ngu?i xem",
+          pageViews: "Lu?t xem",
+          trend: "Xu hu?ng",
         }
       : {
           headingTag: "Admin",
@@ -44,6 +46,7 @@ export function ProgramsListClient({
           online: "Online",
           viewers: "Viewers",
           pageViews: "Pageviews",
+          trend: "Trend",
         };
 
   return (
@@ -145,6 +148,16 @@ export function ProgramsListClient({
                         {analytics?.totalPageViews ?? 0}
                       </p>
                     </div>
+                  </div>
+
+                  <div className="glass-panel-soft rounded-2xl p-3">
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-white/40">
+                        {labels.trend}
+                      </p>
+                      <span className="text-xs text-white/42">2h</span>
+                    </div>
+                    <MiniTrafficChart points={analytics?.trafficTrend ?? []} compact />
                   </div>
                 </div>
               </Link>

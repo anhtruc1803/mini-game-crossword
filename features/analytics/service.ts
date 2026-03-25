@@ -51,18 +51,28 @@ export async function trackViewerActivity(input: TrackViewerActivityInput) {
         ...(input.eventType === "pageview" ? { pageViews: { increment: 1 } } : {}),
       },
     });
-    return program.id;
+  } else {
+    await prisma.viewerSession.create({
+      data: {
+        programId: program.id,
+        sessionId: input.sessionId,
+        pageViews: 1,
+        firstSeenAt: now,
+        ...sharedData,
+      },
+    });
   }
 
-  await prisma.viewerSession.create({
-    data: {
-      programId: program.id,
-      sessionId: input.sessionId,
-      pageViews: 1,
-      firstSeenAt: now,
-      ...sharedData,
-    },
-  });
+  if (input.eventType === "pageview") {
+    await prisma.viewerPageview.create({
+      data: {
+        programId: program.id,
+        sessionId: input.sessionId,
+        path: input.pathname?.slice(0, 255) ?? null,
+        createdAt: now,
+      },
+    });
+  }
 
   return program.id;
 }

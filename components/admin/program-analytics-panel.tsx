@@ -1,11 +1,12 @@
 "use client";
 
+import { MiniTrafficChart } from "@/components/admin/mini-traffic-chart";
 import { useTranslation } from "@/lib/i18n";
 import type { ProgramAnalyticsSummary } from "@/features/analytics/types";
 
 function formatRelativeTime(value: string | null, locale: "vi" | "en") {
   if (!value) {
-    return locale === "vi" ? "Chưa có dữ liệu" : "No data yet";
+    return locale === "vi" ? "Chua có d? li?u" : "No data yet";
   }
 
   const diffMs = new Date(value).getTime() - Date.now();
@@ -32,14 +33,16 @@ export function ProgramAnalyticsPanel({
   const labels =
     locale === "vi"
       ? {
-          eyebrow: "Analytics nội bộ",
-          title: "Người xem",
-          subtitle: "Theo dõi người xem đang online và lượt truy cập của chương trình này.",
-          online: "Đang online",
-          viewers: "Tổng người xem",
-          pageViews: "Lượt tải trang",
-          lastSeen: "Hoạt động gần nhất",
-          note: "Online được tính theo người xem có heartbeat trong 45 giây gần nhất.",
+          eyebrow: "Analytics n?i b?",
+          title: "Ngu?i xem",
+          subtitle: "Theo dõi ngu?i xem dang online và lu?t truy c?p c?a chuong trình này.",
+          online: "Ðang online",
+          viewers: "T?ng ngu?i xem",
+          pageViews: "Lu?t t?i trang",
+          lastSeen: "Ho?t d?ng g?n nh?t",
+          trend: "Xu hu?ng 2 gi? g?n nh?t",
+          trendSubtitle: "M?i di?m tuong ?ng 10 phút pageview.",
+          note: "Online du?c tính theo ngu?i xem có heartbeat trong 45 giây g?n nh?t.",
         }
       : {
           eyebrow: "First-party analytics",
@@ -49,6 +52,8 @@ export function ProgramAnalyticsPanel({
           viewers: "Total viewers",
           pageViews: "Page views",
           lastSeen: "Last activity",
+          trend: "Traffic trend in the last 2 hours",
+          trendSubtitle: "Each point represents 10 minutes of pageviews.",
           note: "Online viewers are sessions seen within the last 45 seconds.",
         };
 
@@ -87,6 +92,14 @@ export function ProgramAnalyticsPanel({
             {labels.note}
           </span>
         </div>
+      </div>
+
+      <div className="glass-panel-soft rounded-[22px] p-4">
+        <div className="mb-4">
+          <p className="text-xs uppercase tracking-[0.22em] text-white/42">{labels.trend}</p>
+          <p className="mt-2 text-sm text-white/60">{labels.trendSubtitle}</p>
+        </div>
+        <MiniTrafficChart points={analytics.trafficTrend} />
       </div>
     </div>
   );
