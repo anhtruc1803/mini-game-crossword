@@ -31,12 +31,12 @@ export function ProgramsListClient({
       ? {
           headingTag: "Admin",
           subtitle:
-            "Qu?n lý chuong trình, hình ?nh, game và theo dõi lu?ng ngu?i xem trên cùng m?t giao di?n.",
-          noDescription: "Chua có mô t? cho chuong trình này.",
+            "Quản lý chương trình, hình ảnh, game và theo dõi lượng người xem trên cùng một giao diện.",
+          noDescription: "Chưa có mô tả cho chương trình này.",
           online: "Online",
-          viewers: "Ngu?i xem",
-          pageViews: "Lu?t xem",
-          trend: "Xu hu?ng",
+          viewers: "Người xem",
+          pageViews: "Lượt xem",
+          trend: "Xu hướng",
         }
       : {
           headingTag: "Admin",

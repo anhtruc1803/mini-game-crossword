@@ -6,7 +6,7 @@ import type { ProgramAnalyticsSummary } from "@/features/analytics/types";
 
 function formatRelativeTime(value: string | null, locale: "vi" | "en") {
   if (!value) {
-    return locale === "vi" ? "Chua có d? li?u" : "No data yet";
+    return locale === "vi" ? "Chưa có dữ liệu" : "No data yet";
   }
 
   const diffMs = new Date(value).getTime() - Date.now();
@@ -33,16 +33,18 @@ export function ProgramAnalyticsPanel({
   const labels =
     locale === "vi"
       ? {
-          eyebrow: "Analytics n?i b?",
-          title: "Ngu?i xem",
-          subtitle: "Theo dõi ngu?i xem dang online và lu?t truy c?p c?a chuong trình này.",
-          online: "Ðang online",
-          viewers: "T?ng ngu?i xem",
-          pageViews: "Lu?t t?i trang",
-          lastSeen: "Ho?t d?ng g?n nh?t",
-          trend: "Xu hu?ng 2 gi? g?n nh?t",
-          trendSubtitle: "M?i di?m tuong ?ng 10 phút pageview.",
-          note: "Online du?c tính theo ngu?i xem có heartbeat trong 45 giây g?n nh?t.",
+          eyebrow: "Analytics nội bộ",
+          title: "Người xem",
+          subtitle:
+            "Theo dõi người xem đang online và lượt truy cập của chương trình này.",
+          online: "Đang online",
+          viewers: "Tổng người xem",
+          pageViews: "Lượt tải trang",
+          lastSeen: "Hoạt động gần nhất",
+          trend: "Xu hướng 2 giờ gần nhất",
+          trendSubtitle: "Mỗi điểm tương ứng 10 phút pageview.",
+          note:
+            "Online được tính theo người xem có heartbeat trong 45 giây gần nhất.",
         }
       : {
           eyebrow: "First-party analytics",
